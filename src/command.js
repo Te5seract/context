@@ -39,24 +39,28 @@ export const command = (function () {
                 if (lines[x] === editor[i]) {
 
                     if (tmp.children[x] && lines.length > 1) {
-                        var selLine = helper.stripContainer(tmp.children[x].outerHTML),
+                        var reg = new RegExp(`<${format}>|<\/${format}>`, "igm"),
+                            selLine = helper.stripContainer(tmp.children[x].outerHTML),
                             selLineFormatted = `<${format}>${selLine.replace(/(<\/.*?>)/g, `</${format}>$1<${format}>`)}</${format}>`;
 
                         editor[i].innerHTML = editor[i].innerHTML.replace(selLine, selLineFormatted);
 
-                        if (x === 0) startInner = selLine.replace(/(<\/.*?>.+|<.*?>.+)/gm, "");
-                        else if (x === lines.length - 1) endInner = selLine.replace(/.+<.*?>/gm, "");
+                        if (x === 0) startInner = selLine.replace(/(<\/.*?>.+|<.*?>.+)/gm, "").replace(reg, "");
+                        else if (x === lines.length - 1) endInner = selLine.replace(/.+<.*?>/gm, "").replace(reg, "");
                     }
                     else if (!tmp.children[x] || lines.length === 1) {
-                        var insert = helper.make(format);
+                        var selLine = helper.stripContainer(tmp.innerHTML),
+                            selLineFormatted = `<${format}>${selLine.replace(/(<\/.*?>)/g, `</${format}>$1<${format}>`)}</${format}>`;
 
-                        range.surroundContents(insert);
+                        editor[i].innerHTML = editor[i].innerHTML.replace(selLine, selLineFormatted);
+
+                        if (x === 0) startInner = selLine.replace(/(<\/.*?>.+|<.*?>.+)/gm, "").replace(reg, "");
+                        else if (x === lines.length - 1) endInner = selLine.replace(/.+<.*?>/gm, "").replace(reg, "");
                     }
+
                 }
             }
         }
-
-        console.log(tmp);
 
         helper.cleanUp(helper.parents(range.startContainer, "body", true), format);
 
@@ -78,7 +82,7 @@ export const command = (function () {
             startContainer,
             endContainer;
 
-        if (lines.length > 1) {
+        // if (lines.length > 1) {
             for (let i = 0; i < lines.length; i++) {
                 var formatLines = lines[i].querySelectorAll("*");
 
@@ -92,13 +96,21 @@ export const command = (function () {
                 }
             }
 
+            if (!endContainer) {
+                endContainer = startContainer;
+                rangeEnd = startHTML.length;
+            }
+
             range.setStart(startContainer, 0);
             range.setEnd(endContainer, rangeEnd);
-        }
+        // }
 
-        // if (lines.length === 1) {
-        //     endContainer = startContainer;
-        //     rangeEnd = startHTML.length;
+        // for (let i = 0; i < lines.length; i++) {
+        //     var formatLines = lines[i].querySelectorAll("*");
+
+        //     for (let x = 0; x < formatLines.length; x++) {}
+        //     console.log(formatLines);
+        //     console.log(lines);
         // }
     }
 
@@ -115,7 +127,11 @@ export const command = (function () {
      */
     function wrap (api, format) {
         var {range, sel} = api,
-            lines = helper.lines(range);
+            lines = helper.lines(range),
+            start = helper.parents(range.startContainer, format),
+            end = helper.parents(range.endContainer, format);
+
+        if (start && end) return;
 
         highlight(applyFormat(range, format));
     }
