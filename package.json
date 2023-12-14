@@ -1,0 +1,23 @@
+{
+  "name": "ripple",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main.js",
+  "type": "module",
+  "exports": {
+    "./": "./build/context.min.js"
+  },
+  "scripts": {
+    "build": "npx webpack --config webpack.config.js",
+    "watch": "npx webpack --watch --config webpack.config.js",
+    "start": "npx webpack serve && npm run watch"
+  },
+  "author": "Isaac Astley",
+  "license": "ISC",
+  "dependencies": {
+    "terser-webpack-plugin": "^5.3.9",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}
