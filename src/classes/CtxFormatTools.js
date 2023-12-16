@@ -2,6 +2,7 @@ export default class CtxFormatTools {
     constructor (editor) {
         this.editor = editor;
         this.tools = [];
+        this.formatList = [];
     }
 
     // -- private
@@ -38,6 +39,7 @@ export default class CtxFormatTools {
         tool.dataset.name = name;
 
         this.tools.push(tool);
+        this.formatList.push(format);
     }
 
     /**

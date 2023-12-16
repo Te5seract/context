@@ -48,7 +48,6 @@ export default class CtxDOM {
         return [ this.#formatRoot(this.start()), this.#formatRoot(this.end()) ];
     }
 
-
     /**
     * get the main format node
     *
@@ -89,42 +88,5 @@ export default class CtxDOM {
         }
 
         return start;
-    }
-
-    /**
-    * get the full list of parent nodes from a 
-    * start node in string format
-    *
-    * @param {HTMLElement} start
-    * the node to start from
-    *
-    * @return {array}
-    */
-    parentsStr (start) {
-        let parent = start;
-        const parents = [];
-
-        while (parent) {
-            parent = parent.parentNode;
-
-            if (parent.parentNode.localName === "body") break;
-
-            parents.push(parent.localName);
-        }
-
-        return parents;
-    }
-
-    /**
-    * get the child nodes of a selection
-    * in a string formatted array
-    *
-    * @return {array}
-    */
-    childrenStr () {
-        const clone = this.range.cloneContents();
-        const children = [ ...clone.childNodes ];
-
-        return children.map(child => child.nodeName.toLowerCase());
     }
 } 

@@ -20,11 +20,6 @@ export default class CtxFormatActions {
     * prepare the selection for formatting
     */
     #prepare (sel, range, format) {
-        //const ctxDom = new CtxDOM();
-        //const ctxRange = new CtxRange(range);
-        //const start = ctxDom.ctxStart();
-        //const end = ctxDom.ctxEnd();
-
         const ctxCommands = new CtxCommands({
             range : range,
             format : format,
@@ -38,8 +33,8 @@ export default class CtxFormatActions {
 
         ctxCommands.slice();
 
-        const [ startParent, endParent ] = ctxDom.formatRoot();
-        const [ start, end ] = ctxDom.getSplitBoundaries();
+        const [ startParent, endParent ] = ctxCommands.formatRoot();
+        const [ start, end ] = ctxCommands.getSplitBoundaries();
 
         this.fragment = {
             start : start,
@@ -49,7 +44,7 @@ export default class CtxFormatActions {
             format : format,
             range : range,
             select : sel,
-            root : ctxDom.root(start),
+            root : ctxCommands.root(start),
             ctxCommands : ctxCommands
         };
     }
@@ -59,8 +54,81 @@ export default class CtxFormatActions {
      * action to perform on the selection
      */
     #action () {
-        this.#break();
-        this.#flatten();
+        const {
+            startParent,
+            endParent,
+            format,
+            range,
+            start
+        } = this.fragment;
+
+        const startFormat = startParent.localName;
+        const endFormat = endParent.localName;
+        const selectionFormat = range.cloneContents().querySelector(format);
+
+        // conditions
+        const sameParent = startParent === endParent;
+        const parentIsParagraph = startFormat !== "p" && endFormat !== "p";
+        const formatsMatch = startFormat === endFormat;
+        const isFormatWrapped = startFormat === format && endFormat === format;
+        const hasFormatting = selectionFormat && selectionFormat.textContent === start.nextSibling.textContent;
+
+        if (sameParent && parentIsParagraph) {
+            this.#break();
+        }
+        else if (!sameParent && formatsMatch) {
+            this.#flatten();
+        }
+        else if (!isFormatWrapped && !hasFormatting) {
+            this.#wrap();
+        }
+        else if (hasFormatting) {
+            this.#unwrap();
+        }
+    }
+
+    #unwrap () {
+        const {
+            startParent,
+            endParent,
+            range,
+            format,
+            ctxCommands
+        } = this.fragment;
+
+        ctxCommands.wrapSelection();
+        ctxCommands.unwrapSelection();
+        ctxCommands.select();
+    }
+
+    #wrap () {
+        const {
+            startParent,
+            endParent,
+            range,
+            format,
+            ctxCommands
+        } = this.fragment;
+
+        ctxCommands.wrapSelection();
+
+        const [ prevNode, nextNode ] = ctxCommands.getNodesBeforeSelection();
+
+        if (prevNode && prevNode.nodeName.toLowerCase() === format) {
+            ctxCommands.moveSelectionBlock("back", prevNode);
+        } 
+        else if (nextNode && nextNode.nodeName.toLowerCase() === format) {
+            ctxCommands.moveSelectionBlock("forwards", nextNode);
+        } else {
+            range.selectNodeContents(ctxCommands.selection);
+
+            const formattedNode = ctxCommands.wrap(format, range.extractContents());
+
+            ctxCommands.selection.after(formattedNode);
+        }
+
+        ctxCommands.unwrapSelection();
+        ctxCommands.select();
     }
 
     /**
@@ -77,17 +145,18 @@ export default class CtxFormatActions {
             startParent,
             endParent,
             format,
-            ctxCommands
+            ctxCommands,
+            range
         } = this.fragment;
 
-        const startFormat = startParent.localName;
-        const endFormat = endParent.localName;
+        //const startFormat = startParent.localName;
+        //const endFormat = endParent.localName;
 
-        // conditions
-        const formatsMatch = startFormat === format && endFormat === format;
-        const sameParent = startParent === endParent;
+        //// conditions
+        //const formatsMatch = startFormat === endFormat;
+        //const sameParent = startParent === endParent;
 
-        if (formatsMatch && sameParent) return;
+        //if (formatsMatch && sameParent) return;
 
         ctxCommands.wrapSelection();
         ctxCommands.unwrapSelection();
@@ -98,39 +167,36 @@ export default class CtxFormatActions {
 
     #break () {
         const {
-            start,
             end,
             startParent,
             endParent,
-            range,
             format,
             ctxCommands
         } = this.fragment;
 
-        const ctxDom = new CtxDOM(range);
-        const ctxRange = new CtxRange(range);
+        //const startFormat = startParent.localName;
+        //const endFormat = endParent.localName;
 
-        // conditions
-        const sameParent = startParent !== endParent;
+        //// conditions
+        //const sameParent = startParent !== endParent;
+        //const parentIsParagraph = startFormat === "p" && endFormat === "p";
 
-        if (startParent !== endParent) return;
+        //if (sameParent || parentIsParagraph) return;
 
         ctxCommands.wrapSelection();
-
-        // select & extract content before start boundary
-        range.setStartBefore(startParent);
-        range.setEndBefore(start);
-
-        const before = range.extractContents();
-
-        // select & extract content after end boundary
-        range.setStartAfter(end);
-        range.setEndAfter(startParent);
-
-        const after = range.extractContents();
-
-        // move boundaries
+        ctxCommands.extractBeforeSelection(startParent);
+        ctxCommands.extractAfterSelection(startParent);
         ctxCommands.moveSelectionAfter(startParent);
+
+        const before = ctxCommands.wrap(format, ctxCommands.before);
+        startParent.after(before);
+        startParent.remove();
+
+        const after = ctxCommands.wrap(format, ctxCommands.after);
+        end.after(after);
+
+        ctxCommands.unwrapSelection();
+        ctxCommands.select();
     }
 
     /**
