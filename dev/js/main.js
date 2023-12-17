@@ -1,9 +1,9 @@
 //import { Context } from "/context.min.js";
-import Context from "/classes/Context.js";
+import Context from "/context/Context.js";
 
-const ctx = new Context(`[data-node="editor-one"]`);
+const ctx = new Context(`[data-node="editor-one"]`, {
+    width : 800,
+    height: 400
+});
 
-ctx.tools.set("underline", "u", "U");
-
-ctx.start();
-
+ctx.init();
