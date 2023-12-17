@@ -215,8 +215,10 @@ export default class CtxCommands extends CtxRange {
         // <em>example text</em>
         formats.forEach((node, i) => {
             const nodeReg = new RegExp(`<\/${ formats[i] }><${ formats[i] }>`, "g");
+            const emptyReg = new RegExp(`<${ formats[i] }><\/${ formats[i] }>`, "g");
 
             this.selection.innerHTML = this.selection.innerHTML.replace(nodeReg, "");
+            this.selection.innerHTML = this.selection.innerHTML.replace(emptyReg, "");
         });
 
         this.range.insertNode(this.selection);

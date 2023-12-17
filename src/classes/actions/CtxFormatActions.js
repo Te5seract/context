@@ -26,11 +26,6 @@ export default class CtxFormatActions {
             select : sel
         });
 
-        const ctxDom = new CtxDOM({ 
-            editor : this.editor,
-            format : format
-        });
-
         ctxCommands.slice();
 
         const [ startParent, endParent ] = ctxCommands.formatRoot();
@@ -169,19 +164,9 @@ export default class CtxFormatActions {
         const {
             end,
             startParent,
-            endParent,
             format,
             ctxCommands
         } = this.fragment;
-
-        //const startFormat = startParent.localName;
-        //const endFormat = endParent.localName;
-
-        //// conditions
-        //const sameParent = startParent !== endParent;
-        //const parentIsParagraph = startFormat === "p" && endFormat === "p";
-
-        //if (sameParent || parentIsParagraph) return;
 
         ctxCommands.wrapSelection();
         ctxCommands.extractBeforeSelection(startParent);
