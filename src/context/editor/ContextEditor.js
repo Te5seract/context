@@ -1,8 +1,9 @@
 export default class ContextEditor {
-    constructor ({ hooks, options, dataPrefix, selectedNode }) {
+    constructor ({ hooks, options, dataPrefix, selectedNode, cssPrefix }) {
         // static
         this.options = options;
         this.dataPrefix = dataPrefix;
+		this.cssPrefix = cssPrefix;
         this.hooks = hooks;
         this.selectedNode = selectedNode;
 
@@ -17,6 +18,38 @@ export default class ContextEditor {
 
     #editor () {
         const editor = this.editor;
+		const width = this.options.width ? this.options.width : "800";
+		const height = this.options.height ? this.options.height : "400";
+
+		this.editorClass = `${ this.cssPrefix }editor-${ crypto.randomUUID() }`;
+
+		editor.classList.add(this.editorClass);
+
+		this.hooks.get("style", styles => {
+			styles.setVar(() => {
+				return {
+					"editor-width" : `${ width }px`,
+					"editor-height" : `${ height }px`
+				}
+			});
+		});
+
+		this.hooks.get("style", styles => {
+			styles.setRule(styles.className(this.editorClass), () => {
+				return {
+					width : `${ width }px`,
+					height : `${ height }px`
+				};
+			});
+
+			styles.setRule(styles.className(this.editorClass), () => {
+				return {
+					width : `${ width }px`,
+					height : `${ height }px`,
+					"background-color" : "red"
+				};
+			});
+		});
 
         editor.dataset.role = `${ this.dataPrefix }main-editor`;
     }

@@ -1,6 +1,9 @@
 import ContexEditor from "./editor/ContextEditor.js";
 import ContextHooks from "./helpers/ContextHooks.js";
 
+// styles
+import ContextStyles from "./styles/ContextStyles.js";
+
 export default class Context {
     constructor (selected, options) {
         // prefixes
@@ -19,6 +22,10 @@ export default class Context {
             document.querySelector(this.selected);
 
         // instances
+		const styles = new ContextStyles();
+
+		this.hooks.set("style", [ styles ]);
+
         this.editor = new ContexEditor({
             hooks : this.hooks,
             dataPrefix : this.dataPrefix,

@@ -7,3 +7,11 @@ const ctx = new Context(`[data-node="editor-one"]`, {
 });
 
 ctx.init();
+
+
+const ctxTwo = new Context(`[data-node="editor-two"]`, {
+    width : 400,
+    height: 200
+});
+
+ctxTwo.init();
