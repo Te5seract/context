@@ -1,41 +1,64 @@
-import ContexEditor from "./editor/ContextEditor.js";
+import ContextEditor from "./editor/ContextEditor.js";
+import ContextWrapper from "./editor/ContextWrapper.js";
 import ContextHooks from "./helpers/ContextHooks.js";
 
 // styles
 import ContextStyles from "./styles/ContextStyles.js";
 
 export default class Context {
-    constructor (selected, options) {
+    constructor (nodeName, editorContext) {
         // prefixes
         this.dataPrefix = "ctx-";
         this.cssPrefix = "_ctx-";
+        this.nodeName = nodeName;
+        this.editorContext = editorContext;
 
-        // instances
+        // hooks
         this.hooks = new ContextHooks();
 
-        // static
-        this.selected = selected;
-        this.options = options;
-
-        this.selectedNode = this.selected instanceof HTMLElement ? 
-            this.selected : 
-            document.querySelector(this.selected);
-
         // instances
-		const styles = new ContextStyles();
+		const styles = new ContextStyles(this.name);
 
 		this.hooks.set("style", [ styles ]);
 
-        this.editor = new ContexEditor({
+        // editor components
+        this.#editorComponents();
+
+        styles.setCss();
+    }
+
+    #editorComponents () {
+        const wrapper = new ContextWrapper({ 
+            nodeName : this.nodeName,
             hooks : this.hooks,
-            dataPrefix : this.dataPrefix,
-            cssPrefix : this.cssPrefix,
-            selectedNode : this.selectedNode,
-            options
+            editorContext : this.editorContext
         });
+
+        const editor = new ContextEditor({
+            hooks : this.hooks
+        });
+
+        this.hooks.set("editor", { wrapper, editor });
+
+        this.#set();
+    }
+
+    #set () {
+        const { wrapper, editor } = this.hooks.get("editor");
+    }
+
+    editor (callback) {
+        if (callback) { 
+            const editor = this.hooks.get("editor");
+            const html = callback(editor);
+
+            html.replace(/\n| {2,}/g, "");
+        }
     }
 
     init () {
-        this.editor.set();
+        this.hooks.get("style", styles => {
+            styles.setCss();
+        });
     }
 }
