@@ -17,7 +17,7 @@ const ctx = new Context(`[data-node="mrg-editor"]`);
 	//}
 
 	//format.inner = inner => {
-		//inner("{underline}");
+		//inner("<underline>");
 	//}
 
 	//format.remove = remove => {
