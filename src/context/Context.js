@@ -1,64 +1,62 @@
-import ContextEditor from "./editor/ContextEditor.js";
-import ContextWrapper from "./editor/ContextWrapper.js";
-import ContextHooks from "./helpers/ContextHooks.js";
-
-// styles
-import ContextStyles from "./styles/ContextStyles.js";
+// components
+import ContextComponent from "./components/ContextComponent.js";
+import ContextWrapper from "./components/ContextWrapper.js";
+import ContextEditor from "./components/ContextEditor.js";
+import ContextToolbar from "./components/ContextToolbar.js";
+import ContextFormats from "./components/ContextFormats.js";
 
 export default class Context {
-    constructor (nodeName, editorContext) {
+    constructor (selector) {
         // prefixes
         this.dataPrefix = "ctx-";
         this.cssPrefix = "_ctx-";
-        this.nodeName = nodeName;
-        this.editorContext = editorContext;
 
-        // hooks
-        this.hooks = new ContextHooks();
+		// static
+		this.selector = selector;
+		this.boundNode = !( selector instanceof HTMLElement ) ? document.querySelector(selector) : selector;
 
-        // instances
-		const styles = new ContextStyles(this.name);
+		// dynamic
+		this.layoutMarkup = `
+			<ContextWrapper>
+				<ContextToolbar>
+					<ContextFormats editor="ContextEditor">
+						{bold}{italic}{strike}
+					</ContextFormats>
+				</ContextToolbar>
 
-		this.hooks.set("style", [ styles ]);
+				<ContextEditor></ContextEditor>
+			</ContextWrapper>
+		`;
 
-        // editor components
-        this.#editorComponents();
+		// components
+		this.components = new ContextComponent();
+		this.components.setMarkup(this.layoutMarkup);
+		this.components.globalProps({
+			boundNode : this.boundNode,
+			dataPrefix : this.dataPrefix,
+			cssPrefix : this.cssPrefix
+		});
 
-        styles.setCss();
+		this.components.register(ContextWrapper, "section");
+		this.components.register(ContextEditor, "iframe");
+		this.components.register(ContextToolbar, "div");
+		this.components.register(ContextFormats, "div");
+
+		this.components.get("ContextFormats", formats => {
+			formats.register = set => {
+				set("bold", "strong", "B");
+				set("italic", "em", "I");
+				set("strike", "s", "S");
+			}
+		});
     }
 
-    #editorComponents () {
-        const wrapper = new ContextWrapper({ 
-            nodeName : this.nodeName,
-            hooks : this.hooks,
-            editorContext : this.editorContext
-        });
+	layout (layout) {
+		this.layoutMarkup = layout;
+	}
 
-        const editor = new ContextEditor({
-            hooks : this.hooks
-        });
+	init () {
 
-        this.hooks.set("editor", { wrapper, editor });
-
-        this.#set();
-    }
-
-    #set () {
-        const { wrapper, editor } = this.hooks.get("editor");
-    }
-
-    editor (callback) {
-        if (callback) { 
-            const editor = this.hooks.get("editor");
-            const html = callback(editor);
-
-            html.replace(/\n| {2,}/g, "");
-        }
-    }
-
-    init () {
-        this.hooks.get("style", styles => {
-            styles.setCss();
-        });
-    }
+		this.components.set(this.boundNode);
+	}
 }

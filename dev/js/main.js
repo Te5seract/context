@@ -1,20 +1,36 @@
 //import { Context } from "/context.min.js";
 import Context from "/context/Context.js";
 
-const ctx = new Context("mrg-editor");
+const ctx = new Context(`[data-node="mrg-editor"]`);
 
-//ctx.editor(({ editor }) => {
-    //return (`
-        //${ editor.start() }
-    //`);
+//ctx.components.get("ContextEditor", editor => {
+	//editor.size(800, 300);
 //});
 
-//const ctxTwo = new Context({
-    //name : "second-editor",
-    //size : {
-        //width : 400,
-        //height : 200
-    //}
+//ctx.components.get("ContextFormats", format => {
+	//format.register = set => {
+		//set("underline", "u", "_");
+	//}
+
+	//format.add = add => {
+		//add("underline", "u", "_");
+	//}
+
+	//format.inner = inner => {
+		//inner("{underline}");
+	//}
+
+	//format.remove = remove => {
+		//remove("bold");
+	//}
 //});
 
-//ctxTwo.init();
+//ctx.layout(`
+	//<ContextWrapper>
+		//<ContextEditor></ContextEditor>
+	//</ContextWrapper>
+//`);
+
+//ctx.formats.add("underline", "u");
+
+ctx.init();
