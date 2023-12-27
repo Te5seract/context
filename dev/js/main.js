@@ -7,23 +7,20 @@ const ctx = new Context(`[data-node="mrg-editor"]`);
 	//editor.size(800, 300);
 //});
 
-//ctx.components.get("ContextFormats", format => {
-	//format.register = set => {
+ctx.components.get("ContextFormats", format => {
+	//format.set = set => {
 		//set("underline", "u", "_");
+		//set("bold", "strong", "b");
 	//}
 
 	//format.add = add => {
 		//add("underline", "u", "_");
 	//}
 
-	//format.inner = inner => {
-		//inner("<underline>");
-	//}
-
 	//format.remove = remove => {
 		//remove("bold");
 	//}
-//});
+});
 
 //ctx.layout(`
 	//<ContextWrapper>

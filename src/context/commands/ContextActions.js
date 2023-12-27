@@ -1,8 +1,75 @@
 import ContextDOM from "../helpers/ContextDOM.js";
+import ContextTreeWalker from "../helpers/ContextTreeWalker.js";
 
 export default class ContextActions {
 	constructor () {
 		this.DOM = new ContextDOM();
+		this.treeWalker = new ContextTreeWalker();
+	}
+
+	/**
+	* returns a node regular expression for
+	* the closing and opening tags of an HTML
+	* element
+	*
+	* @param {string} type
+	* the node tag type
+	*
+	* @return {string}
+	*/
+	#nodeReg (tag) {
+		return new RegExp(`<${ tag }>|<\/${ tag }>`, "gi");
+	}
+
+	/**
+	* creates a temporary node to contain and 
+	* isolate any siginificant text changes
+	*
+	* @param {HTMLElement|string}
+	*
+	* @return {HTMLElement}
+	*/
+	#tmp (content) {
+		const tmp = document.createElement("div");
+
+		if (content instanceof HTMLElement) tmp.appendChild(content);
+		else tmp.innerHTML = content;
+
+		return tmp;
+	}
+
+	/**
+	* gets details about the start and end
+	* node boundaries
+	*
+	* @param {string} type
+	* the format type
+	*
+	* @return {object}
+	*/
+	details (type) {
+		this.slice();
+
+		const startNode = this.DOM.nodeRoot(this.ctxStart, type);
+		const endNode = this.DOM.nodeRoot(this.ctxEnd, type);
+		const format = type;
+		const cloned = this.range.cloneContents();
+
+		// conditions
+		const sameNodes = startNode === endNode;
+		const sameFormat = startNode.localName === type && endNode.localName === type;
+		const containsFormat = cloned.querySelector(format) !== null;
+
+		const details = {
+			startNode,
+			endNode,
+			sameNodes,
+			sameFormat,
+			containsFormat,
+			format
+		};
+
+		return details;
 	}
 
 	/**
@@ -20,11 +87,11 @@ export default class ContextActions {
 	*
 	* @return {void}
 	*/
-	set (range, start, end) {
+	set (range, start, end, select) {
 		this.range = range;
 		this.ctxStart = start;
 		this.ctxEnd = end;
-		this.selectionActive = false;
+		this.ctxSelect = select;
 	}
 
 	/**
@@ -56,36 +123,52 @@ export default class ContextActions {
 	}
 
 	/**
+	* creates the selection node
+	* <span data-role="ctx-select"></span>
+	*
+	* @return {HTMLElement}
+	*/
+	select () {
+		const ctxSelect = document.createElement("span");
+
+		ctxSelect.dataset.role = "ctx-select";
+
+		return ctxSelect;
+	}
+
+	/**
 	* contains the selection range inside a
 	* ctx-selection node
+	*
+	* @param {bool} contained
+	* is the selection going to be contained
+	* in a selection node: data-role="ctx-select"
+	*
+	* @return {void}
 	*/
-	contain () {
-		// if the container is already set, remove it
-		// and select the content between range 
-		// boundaries again
-		if (this.container) {
-			this.range.selectNodeContents(this.container);
+	contain (contained) {
+		if (contained) {
+			const content = this.range.extractContents();
 
-			const extraction = this.range.extractContents();
+			this.ctxSelect.appendChild(content);
 
-			this.container.after(extraction);
+			this.range.insertNode(this.ctxSelect);
 
-			this.container.remove();
+			this.ctxSelect.before(this.ctxStart);
+			this.ctxSelect.after(this.ctxEnd);
 
-			this.range.setStartAfter(this.ctxStart);
-			this.range.setEndBefore(this.ctxEnd);
+			this.highlight();
+
+			return;
 		}
 
-		// contain the selection
-		this.container = document.createElement("span");
+		this.range.selectNodeContents(this.ctxSelect);
 
-		const content = this.range.extractContents();
+		const extract = this.range.extractContents();
 
-		this.container.dataset.role = "ctx-selection";
+		this.ctxStart.after(extract);
 
-		this.container.appendChild(content);
-
-		this.ctxStart.after(this.container);
+		this.ctxSelect.remove();
 	}
 
 	/**
@@ -104,6 +187,9 @@ export default class ContextActions {
 
 		this.range.setStart(startContainer, startOffset);
 		this.range.insertNode(this.ctxStart);
+
+		this.range.setStartAfter(this.ctxStart);
+		this.range.setEndBefore(this.ctxEnd);
 	}
 
 	/**
@@ -117,9 +203,56 @@ export default class ContextActions {
 		this.range.setEndBefore(this.ctxEnd);
 	}
 
-	details () {
-		const details = {};
+	/**
+	* wraps the seletion in a specified format
+	*
+	* @param {string} type
+	* the type of node to wrap the selection in
+	*
+	* @return {void}
+	*/
+	wrap (tag) {
+		const formatNode = document.createElement(tag);
 
-		this.slice();
+		this.range.selectNodeContents(this.ctxSelect);
+
+		const extract = this.range.extractContents();
+
+		formatNode.appendChild(extract);
+
+		this.ctxSelect.appendChild(formatNode);
+
+		this.treeWalker.walkAtoB(this.ctxStart.previousElementSibling, this.ctxEnd.nextElementSibling, node => {
+			console.log(node);
+		});
+	}
+
+	/**
+	* removes the start and end boundaries
+	*
+	* @return {void}
+	*/
+	deselect () {
+		this.ctxStart.remove();
+		this.ctxEnd.remove();
+	}
+
+	/**
+	* removes any tag that exists in the
+	* selected content
+	*
+	* @param {string} tag
+	* the tag to remove
+	*
+	* @return {void}
+	*/
+	exterminate (tag) {
+		const nodeReg = this.#nodeReg(tag);
+
+		const tmp = this.#tmp(this.ctxSelect.innerHTML);
+
+		tmp.innerHTML = tmp.innerHTML.replace(nodeReg, "");
+
+		this.ctxSelect.innerHTML = tmp.innerHTML;
 	}
 }

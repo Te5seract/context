@@ -4,7 +4,7 @@ export default class ContextEditor {
 
 		node.contentDocument.designMode = "on";
 
-		node.contentDocument.body.innerHTML = `<p>This is some text here for testing with for some reason or another</p>`;
+		node.contentDocument.body.innerHTML = `<p>This <strong>is some t</strong>ext here for test<strong>ing with for</strong> some reason or another</p>`;
 	}
 
 	get () {

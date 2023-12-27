@@ -16,11 +16,19 @@ export default class Context {
 		this.boundNode = !( selector instanceof HTMLElement ) ? document.querySelector(selector) : selector;
 
 		// dynamic
+		this.#setup();
+    }
+
+	/**
+	* sets up the editor layout and settings
+	*
+	* @return {void}
+	*/
+	#setup () {
 		this.layoutMarkup = `
 			<ContextWrapper>
 				<ContextToolbar>
 					<ContextFormats editor="ContextEditor">
-						{bold}{italic}{strike}
 					</ContextFormats>
 				</ContextToolbar>
 
@@ -34,7 +42,8 @@ export default class Context {
 		this.components.globalProps({
 			boundNode : this.boundNode,
 			dataPrefix : this.dataPrefix,
-			cssPrefix : this.cssPrefix
+			cssPrefix : this.cssPrefix,
+			debugmode : false
 		});
 
 		this.components.register(ContextWrapper, "section");
@@ -43,20 +52,25 @@ export default class Context {
 		this.components.register(ContextFormats, "div");
 
 		this.components.get("ContextFormats", formats => {
-			formats.register = set => {
+			formats.set = set => {
 				set("bold", "strong", "B");
 				set("italic", "em", "I");
 				set("strike", "s", "S");
 			}
 		});
-    }
+	}
 
+	/**
+	* enables custom layout specification
+	*/
 	layout (layout) {
 		this.layoutMarkup = layout;
 	}
 
+	/**
+	* initialises the editor
+	*/
 	init () {
-
 		this.components.set(this.boundNode);
 	}
 }
