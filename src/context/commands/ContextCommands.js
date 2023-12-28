@@ -22,7 +22,13 @@ export default class ContextCommands extends ContextActions {
 		if (!isCollapsed) {
 			const range = sel.getRangeAt(0);
 
-			super.set(range, this.ctxStart, this.ctxEnd, this.ctxSelect);
+			super.set(
+				range, 
+				this.ctxStart, 
+				this.ctxEnd, 
+				this.ctxSelect,
+				this.editor
+			);
 
 			this.details = super.details(type);
 
@@ -34,7 +40,7 @@ export default class ContextCommands extends ContextActions {
 			else if (!sameFormat && containsFormat && sameNodes) {
 				this.#unwrap();
 			}
-			else if (( sameFormat || !sameFormat ) && !sameNodes && containsFormat) {
+			else if (sameFormat && !sameNodes && containsFormat) {
 				this.#bridge();
 			}
 			else if (sameFormat || !containsFormat || sameNodes) {
@@ -46,7 +52,7 @@ export default class ContextCommands extends ContextActions {
 	#bridge () {
 		const { format } = this.details;
 
-		if (this.settings.debug) console.log("break");
+		if (this.settings.debug) console.log("bridge");
 
 		super.contain(true);
 		super.exterminate(format);

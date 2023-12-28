@@ -17,13 +17,24 @@ export default class ContextTreeWalker {
 	*/
 	walkAtoB (start, end, callback) {
 		let walking = start;
+		let i = 0;
 
 		while (walking) {
-			if (callback) callback(walking);
+			const prev = i > 0 ? walking.previousSibling : null;
+			const current = walking;
+			const next = walking !== end ? walking.nextSibling : null;
 
-			if (walking === end) break;
+			const props = { prev, current, next };
+
+			if (callback) callback(props);
+
+			if (!walking.nextSibling) break;
+
+			if (end && walking === end) break;
 
 			walking = walking.nextSibling;
+
+			i++;
 		}
 	}
 }

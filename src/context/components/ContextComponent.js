@@ -209,9 +209,13 @@ export default class ContextComponent {
 		const nodes = Object.keys(this.nodes).filter(node => node !== "run");
 
 		nodes.forEach(node => {
-			const ctxElement = this.nodes[node];
-			const ctxInstanceProps = ctxElement.props;
-			const ctxNode = new ctxElement.instance(ctxInstanceProps);
+			const fauxNodeReg = new RegExp(`<${ node }>|<\/${ node }>`);
+
+			if (this.markup.match(fauxNodeReg)) {
+				const ctxElement = this.nodes[node];
+				const ctxInstanceProps = ctxElement.props;
+				const ctxNode = new ctxElement.instance(ctxInstanceProps);
+			}
 		});
 	}
 }

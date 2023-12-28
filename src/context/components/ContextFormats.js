@@ -3,6 +3,8 @@ import ContextCommands from "../commands/ContextCommands.js";
 /**
 * @namespace Components
 *
+* author: isaacastley@live.com
+*
 * this class represents the <ContextFormats> proxy
 * node for the editor
 *
@@ -12,10 +14,15 @@ import ContextCommands from "../commands/ContextCommands.js";
 *  2. remove
 *  3. add
 */
-
 export default class ContextFormats {
 	constructor (props) {
-		const { node, classname, cssPrefix, editor, debugmode } = props;
+		const { 
+			node, 
+			classname, 
+			cssPrefix, 
+			editor, 
+			debugmode 
+		} = props;
 
 		// properties
 		this.node = node;

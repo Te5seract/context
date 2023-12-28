@@ -6,10 +6,19 @@ import ContextToolbar from "./components/ContextToolbar.js";
 import ContextFormats from "./components/ContextFormats.js";
 
 export default class Context {
-    constructor (selector) {
+	/**
+	* @param {string|HTMLElement} 
+	* the node selector for the context
+	* editor's position
+	*
+	* @param {string} [layout]
+	* a custom editor layout specification
+	*/
+    constructor (selector, layout) {
         // prefixes
         this.dataPrefix = "ctx-";
         this.cssPrefix = "_ctx-";
+		this.layoutMarkup = layout;
 
 		// static
 		this.selector = selector;
@@ -25,16 +34,18 @@ export default class Context {
 	* @return {void}
 	*/
 	#setup () {
-		this.layoutMarkup = `
-			<ContextWrapper>
-				<ContextToolbar>
-					<ContextFormats editor="ContextEditor">
-					</ContextFormats>
-				</ContextToolbar>
+		if (!this.layoutMarkup) {
+			this.layoutMarkup = `
+				<ContextWrapper>
+					<ContextToolbar>
+						<ContextFormats editor="ContextEditor">
+						</ContextFormats>
+					</ContextToolbar>
 
-				<ContextEditor></ContextEditor>
-			</ContextWrapper>
-		`;
+					<ContextEditor></ContextEditor>
+				</ContextWrapper>
+			`;
+		}
 
 		// components
 		this.components = new ContextComponent();
@@ -43,7 +54,7 @@ export default class Context {
 			boundNode : this.boundNode,
 			dataPrefix : this.dataPrefix,
 			cssPrefix : this.cssPrefix,
-			debugmode : false
+			debugmode : true
 		});
 
 		this.components.register(ContextWrapper, "section");
@@ -58,13 +69,6 @@ export default class Context {
 				set("strike", "s", "S");
 			}
 		});
-	}
-
-	/**
-	* enables custom layout specification
-	*/
-	layout (layout) {
-		this.layoutMarkup = layout;
 	}
 
 	/**

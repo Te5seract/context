@@ -32,7 +32,9 @@ export default class ContextActions {
 	#tmp (content) {
 		const tmp = document.createElement("div");
 
-		if (content instanceof HTMLElement) tmp.appendChild(content);
+		if (content instanceof HTMLElement || content.nodeName && content.nodeName.match(/#document-fragment/i)) { 
+			tmp.appendChild(content);
+		}
 		else tmp.innerHTML = content;
 
 		return tmp;
@@ -54,11 +56,16 @@ export default class ContextActions {
 		const endNode = this.DOM.nodeRoot(this.ctxEnd, type);
 		const format = type;
 		const cloned = this.range.cloneContents();
+		const startFormat = startNode.nodeName.toLowerCase();
+		const endFormat = endNode.nodeName.toLowerCase();
 
 		// conditions
-		const sameNodes = startNode === endNode;
 		const sameFormat = startNode.localName === type && endNode.localName === type;
 		const containsFormat = cloned.querySelector(format) !== null;
+
+		let sameNodes = startNode === endNode;
+
+		if (startFormat === "p" && endFormat === "p") sameNodes = startFormat === "p" === endFormat === "p";
 
 		const details = {
 			startNode,
@@ -148,11 +155,19 @@ export default class ContextActions {
 	*/
 	contain (contained) {
 		if (contained) {
+			const selection = this.range.cloneContents();
+			const selectedNodes = this.DOM.nodeTypesToString(selection.childNodes);
+
+			if (selectedNodes.includes("p")) return;
+
 			const content = this.range.extractContents();
 
 			this.ctxSelect.appendChild(content);
 
 			this.range.insertNode(this.ctxSelect);
+
+			// clear any blank #text nodes
+			this.#clearBlankText();
 
 			this.ctxSelect.before(this.ctxStart);
 			this.ctxSelect.after(this.ctxEnd);
@@ -162,6 +177,8 @@ export default class ContextActions {
 			return;
 		}
 
+		if (!this.ctxSelect.textContent) return;
+
 		this.range.selectNodeContents(this.ctxSelect);
 
 		const extract = this.range.extractContents();
@@ -169,6 +186,28 @@ export default class ContextActions {
 		this.ctxStart.after(extract);
 
 		this.ctxSelect.remove();
+
+		// clear any blank #text nodes
+		this.#clearBlankText();
+	}
+
+	/**
+	* removes blank text nodes wherever
+	* a split may occur in the HTML
+	*
+	* @return {void}
+	*/
+	#clearBlankText () {
+		const nextNode = this.ctxEnd.nextSibling;
+		const prevNode = this.ctxStart.previousSibling;
+
+		if (nextNode && nextNode.nodeName.match(/#text/) && !nextNode.textContent) {
+			nextNode.remove();
+		}
+
+		if (prevNode && prevNode.nodeName.match(/#text/) && !prevNode.textContent) {
+			prevNode.remove();
+		}
 	}
 
 	/**
@@ -212,18 +251,59 @@ export default class ContextActions {
 	* @return {void}
 	*/
 	wrap (tag) {
-		const formatNode = document.createElement(tag);
+		if (this.ctxSelect.textContent) {
+			const formatNode = document.createElement(tag);
 
-		this.range.selectNodeContents(this.ctxSelect);
+			this.range.selectNodeContents(this.ctxSelect);
 
-		const extract = this.range.extractContents();
+			const extract = this.range.extractContents();
 
-		formatNode.appendChild(extract);
+			formatNode.appendChild(extract);
 
-		this.ctxSelect.appendChild(formatNode);
+			this.ctxSelect.appendChild(formatNode);
 
-		this.treeWalker.walkAtoB(this.ctxStart.previousElementSibling, this.ctxEnd.nextElementSibling, node => {
-			console.log(node);
+			return;
+		}
+
+		const startLine = this.DOM.getLine(this.ctxStart);
+		const endLine = this.DOM.getLine(this.ctxEnd);
+
+		// wrap multiline
+		this.treeWalker.walkAtoB(startLine, endLine, ({ prev, current, next }) => {
+			const formatNode = document.createElement(tag);
+
+			if (!prev) {
+				this.range.setStartAfter(this.ctxStart);
+				this.range.setEnd(current, current.childNodes.length);
+
+				const extract = this.range.extractContents();
+
+				formatNode.appendChild(extract);
+
+				this.ctxStart.after(formatNode);
+			}
+
+			else if (prev && next) {
+				this.range.setStart(current, 0);
+				this.range.setEnd(current, current.childNodes.length);
+
+				const extract = this.range.extractContents();
+
+				formatNode.appendChild(extract);
+
+				current.appendChild(formatNode);
+			}
+
+			else if (prev && !next) {
+				this.range.setStart(current, 0);
+				this.range.setEndBefore(this.ctxEnd);
+
+				const extract = this.range.extractContents();
+
+				formatNode.appendChild(extract);
+
+				this.ctxEnd.before(formatNode);
+			}
 		});
 	}
 
@@ -249,10 +329,80 @@ export default class ContextActions {
 	exterminate (tag) {
 		const nodeReg = this.#nodeReg(tag);
 
-		const tmp = this.#tmp(this.ctxSelect.innerHTML);
+		if (this.ctxSelect.textContent) {
+			const tmp = this.#tmp(this.ctxSelect.innerHTML);
 
-		tmp.innerHTML = tmp.innerHTML.replace(nodeReg, "");
+			tmp.innerHTML = tmp.innerHTML.replace(nodeReg, "");
 
-		this.ctxSelect.innerHTML = tmp.innerHTML;
+			this.ctxSelect.innerHTML = tmp.innerHTML;
+
+			return;
+		}
+
+		const startLine = this.DOM.getLine(this.ctxStart);
+		const endLine = this.DOM.getLine(this.ctxEnd);
+
+		// wrap multiline
+		this.treeWalker.walkAtoB(startLine, endLine, ({ prev, current, next }) => {
+			const formatNode = document.createElement(tag);
+
+			if (!prev) {
+				this.range.setStartAfter(this.ctxStart);
+				this.range.setEnd(current, current.childNodes.length);
+
+				this.ctxSelect.appendChild(this.range.extractContents());
+				this.ctxStart.after(this.ctxSelect);
+
+				const tmp = this.#tmp(this.ctxSelect.innerHTML);
+
+				tmp.innerHTML = tmp.innerHTML.replace(nodeReg, "");
+
+				this.ctxSelect.innerHTML = tmp.innerHTML;
+
+				this.range.selectNodeContents(this.ctxSelect);
+
+				const extract = this.range.extractContents();
+
+				this.ctxSelect.after(extract);
+			}
+			else if (prev && next) {
+				this.range.setStart(current, 0);
+				this.range.setEnd(current, current.childNodes.length);
+
+				this.ctxSelect.appendChild(this.range.extractContents());
+				current.appendChild(this.ctxSelect);
+
+				const tmp = this.#tmp(this.ctxSelect.innerHTML);
+
+				tmp.innerHTML = tmp.innerHTML.replace(nodeReg, "");
+
+				this.ctxSelect.innerHTML = tmp.innerHTML;
+
+				this.range.selectNodeContents(this.ctxSelect);
+
+				const extract = this.range.extractContents();
+
+				this.ctxSelect.after(extract);
+			}
+			else if (prev && !next) {
+				this.range.setStart(current, 0);
+				this.range.setEndBefore(this.ctxEnd);
+
+				this.ctxSelect.appendChild(this.range.extractContents());
+				this.ctxEnd.before(this.ctxSelect);
+
+				const tmp = this.#tmp(this.ctxSelect.innerHTML);
+
+				tmp.innerHTML = tmp.innerHTML.replace(nodeReg, "");
+
+				this.ctxSelect.innerHTML = tmp.innerHTML;
+
+				this.range.selectNodeContents(this.ctxSelect);
+
+				const extract = this.range.extractContents();
+
+				this.ctxSelect.after(extract);
+			}
+		});
 	}
 }

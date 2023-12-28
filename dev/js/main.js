@@ -22,12 +22,6 @@ ctx.components.get("ContextFormats", format => {
 	//}
 });
 
-//ctx.layout(`
-	//<ContextWrapper>
-		//<ContextEditor></ContextEditor>
-	//</ContextWrapper>
-//`);
-
 //ctx.formats.add("underline", "u");
 
 ctx.init();
