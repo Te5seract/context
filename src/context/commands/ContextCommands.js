@@ -28,8 +28,8 @@ export default class ContextCommands extends ContextActions {
 
 			super.set(
 				range, 
-				this.ctxStart, 
-				this.ctxEnd, 
+				//this.ctxStart, 
+				//this.ctxEnd, 
 				this.ctxSelect,
 				this.editor
 			);

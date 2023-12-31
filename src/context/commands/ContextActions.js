@@ -6,6 +6,13 @@ export default class ContextActions {
 		this.DOM = new ContextDOM();
 		this.treeWalker = new ContextTreeWalker();
 		this.ctxMultiSelect = [];
+
+		// dynamic
+		this.ctxStart = this.start();
+		this.ctxEnd = this.end();
+		this.ctxSelect = this.select();
+		this.ctxScoutStart = this.scoutStart();
+		this.ctxScoutEnd = this.scoutEnd();
 	}
 
 	/**
