@@ -5,7 +5,7 @@ export default class ContextEditor {
 		node.contentDocument.designMode = "on";
 
 		node.contentDocument.body.innerHTML = `
-			<p>Here is a second line for the editor <strong>for further</strong> testing</p><p>This <strong>is some t</strong>ext here for test<strong>ing with for</strong> some reason or another</p><p>Here is a second line for the editor for further testing</p>
+			<p>Here is a second line <em>for th<strong>e editor </strong></em><strong>for <em>further testing</em></strong></p><p><strong>This <em>is some</em> t</strong>ext here for test<strong>ing with for</strong> some reason or another</p><p>Here is a second line for the editor for further testing</p>
 		`;
 	}
 

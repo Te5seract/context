@@ -15,6 +15,10 @@ export default class ContextCommands extends ContextActions {
 		this.settings = {...this.settings, ...settings };
 	}
 
+	trueFalse (value) {
+		return ( value || !value );
+	}
+
 	exec (type, settings) {
 		const sel = this.editor.getSelection();
 		const { isCollapsed } = sel;
@@ -32,39 +36,17 @@ export default class ContextCommands extends ContextActions {
 
 			this.details = super.details(type);
 
-			const { sameNodes, sameFormat, containsFormat } = this.details;
+			const { percentOfFormat, isSameFormat, containsFormat, isMultiline } = this.details;
 
-			if (!sameFormat && !containsFormat && sameNodes) {
+			//if (!isSameFormat && this.trueFalse(containsFormat)) {
+			if (percentOfFormat < 95) {
 				this.#wrap();
 			}
-			else if (!sameFormat && containsFormat && sameNodes) {
+			//else if (isSameFormat && this.trueFalse(containsFormat)) {
+			else if (percentOfFormat >= 95) {
 				this.#unwrap();
 			}
-			else if (sameFormat && !sameNodes && containsFormat) {
-				this.#bridge();
-			}
-			else if (sameFormat || !containsFormat || sameNodes) {
-				this.#break();
-			}
 		}
-	}
-
-	#bridge () {
-		const { format } = this.details;
-
-		if (this.settings.debug) console.log("bridge");
-
-		super.contain(true);
-		super.exterminate(format);
-		super.wrap(format);
-	}
-
-	#break () {
-		const { format } = this.details;
-
-		if (this.settings.debug) console.log("break");
-
-		super.contain(true);
 	}
 
 	#unwrap () {
@@ -72,11 +54,8 @@ export default class ContextCommands extends ContextActions {
 
 		if (this.settings.debug) console.log("unwrap");
 
-		super.contain(true);
-		super.exterminate(format);
-		super.contain();
-		super.highlight();
-		super.deselect();
+		//super.contain(true);
+		//super.highlight();
 	}
 
 	#wrap () {
@@ -85,7 +64,6 @@ export default class ContextCommands extends ContextActions {
 		if (this.settings.debug) console.log("wrap");
 
 		super.contain(true);
-		super.exterminate(format);
 		super.wrap(format);
 		super.contain();
 		super.highlight();

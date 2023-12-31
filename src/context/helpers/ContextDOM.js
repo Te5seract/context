@@ -15,9 +15,9 @@ export default class ContextDOM {
 		let parent = start;
 
 		while (parent) {
-			if (parent.parentNode.localName === "body") return parent;
+			if (parent.parentNode.nodeName.toLowerCase() === "body") return parent;
 
-			if (parent.localName === type) return parent;
+			if (parent.nodeName.toLowerCase() === type) return parent;
 
 			parent = parent.parentNode;
 		}
@@ -36,7 +36,7 @@ export default class ContextDOM {
 		let parent = start;
 
 		while (parent) {
-			if (parent.parentNode.localName === "body") return parent;
+			if (parent.parentNode && parent.parentNode.localName === "body") return parent;
 
 			parent = parent.parentNode;
 		}
