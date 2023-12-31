@@ -34,15 +34,15 @@ export default class ContextCommands extends ContextActions {
 				this.editor
 			);
 
-			this.details = super.details(type);
+			super.slice();
+
+			//this.details = super.details(type);
 
 			const { percentOfFormat, isSameFormat, containsFormat, isMultiline } = this.details;
 
-			//if (!isSameFormat && this.trueFalse(containsFormat)) {
 			if (percentOfFormat < 95) {
 				this.#wrap();
 			}
-			//else if (isSameFormat && this.trueFalse(containsFormat)) {
 			else if (percentOfFormat >= 95) {
 				this.#unwrap();
 			}
@@ -50,23 +50,14 @@ export default class ContextCommands extends ContextActions {
 	}
 
 	#unwrap () {
-		const { format } = this.details;
+		//const { format } = this.details;
 
 		if (this.settings.debug) console.log("unwrap");
-
-		//super.contain(true);
-		//super.highlight();
 	}
 
 	#wrap () {
-		const { format } = this.details;
+		//const { format } = this.details;
 
 		if (this.settings.debug) console.log("wrap");
-
-		super.contain(true);
-		super.wrap(format);
-		super.contain();
-		super.highlight();
-		super.deselect();
 	}
 }
