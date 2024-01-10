@@ -5,9 +5,6 @@ export default class ContextCommands extends ContextActions {
 		super();
 
 		this.editor = editor;
-		this.ctxStart = super.start();
-		this.ctxEnd = super.end();
-		this.ctxSelect = super.select();
 		this.settings = {};
 	}
 
@@ -19,7 +16,7 @@ export default class ContextCommands extends ContextActions {
 		return ( value || !value );
 	}
 
-	exec (type, settings) {
+	exec (format, settings) {
 		const sel = this.editor.getSelection();
 		const { isCollapsed } = sel;
 
@@ -28,36 +25,43 @@ export default class ContextCommands extends ContextActions {
 
 			super.set(
 				range, 
-				//this.ctxStart, 
-				//this.ctxEnd, 
-				this.ctxSelect,
+                format,
 				this.editor
 			);
 
 			super.slice();
 
-			//this.details = super.details(type);
+			const { 
+                startFormat, 
+                endFormat,
+                //startSiblingFormat,
+                //endSiblingFormat
+            } = this.details;
 
-			const { percentOfFormat, isSameFormat, containsFormat, isMultiline } = this.details;
-
-			if (percentOfFormat < 95) {
+            if (startFormat !== format || endFormat !== format) {
 				this.#wrap();
-			}
-			else if (percentOfFormat >= 95) {
+			} 
+            else if (startFormat === format && endFormat === format) {
 				this.#unwrap();
 			}
 		}
 	}
 
 	#unwrap () {
-		//const { format } = this.details;
-
 		if (this.settings.debug) console.log("unwrap");
+
+        super.unwrap();
+        super.highlight();
+        super.deselect();
 	}
 
 	#wrap () {
-		//const { format } = this.details;
+        const { format } = this.details;
 
 		if (this.settings.debug) console.log("wrap");
-	}
+
+        super.wrap();
+        super.highlight();
+        super.deselect();
+    }
 }

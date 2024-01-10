@@ -42,6 +42,33 @@ export default class ContextDOM {
 		}
 	}
 
+    getFormats (start, exclude) {
+        const parentFormats = [];
+
+        let parent = start;
+
+        while (parent) {
+            parent = parent.parentNode;
+
+            if (parent.parentNode && parent.parentNode.nodeName.toLowerCase() === "body") break;
+
+            if (exclude && parent.nodeName.toLowerCase() !== exclude) parentFormats.push(parent.nodeName.toLowerCase());
+            else if (!exclude) parentFormats.push(parent.nodeName.toLowerCase());
+        }
+
+        return parentFormats;
+    }
+
+    getRootFormat (start) {
+        let parent = start;
+
+        while (parent) {
+            parent = parent.parentNode;
+
+            if (parent.parentNode && parent.parentNode.parentNode.nodeName.toLowerCase() === "body") return parent;
+        }
+    }
+
 	nodeTypesToString (nodeList) {
 		const nodes = [ ...nodeList ].map(node => node.nodeName.toLowerCase());
 

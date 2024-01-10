@@ -168,6 +168,7 @@ export default class ContextFormats {
 		this.command.setMode({
 			debug : this.debugmode
 		});
+
 		this.command.exec(format);
 	}
 }
