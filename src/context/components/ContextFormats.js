@@ -21,7 +21,8 @@ export default class ContextFormats {
 			classname, 
 			cssPrefix, 
 			editor, 
-			debugmode 
+			debugmode,
+            onFormat
 		} = props;
 
 		// properties
@@ -147,6 +148,8 @@ export default class ContextFormats {
 				this.node.appendChild(format.button);
 
 				format.button.addEventListener("pointerdown", this.#format);
+                this.editor.contentDocument.body.addEventListener("pointerup", this.#cursorPosition);
+                this.editor.contentDocument.body.addEventListener("keyup", this.#keyPressed);
 			}
 		});
 	}
@@ -170,5 +173,35 @@ export default class ContextFormats {
 		});
 
 		this.command.exec(format);
+
+        if (this.onFormatCallback) this.onFormatCallback(this.command);
+
+        if (this.onPositionCallback) this.onPositionCallback(this.command);
+
+        if (this.onKeyPressCallback) this.onKeyPressCallback(this.command);
 	}
+
+    #cursorPosition = () => {
+        if (this.onPositionCallback) this.onPositionCallback(this.command);
+        if (this.onKeyPressCallback) this.onKeyPressCallback(this.command);
+    }
+
+    #keyPressed = () => {
+        if (this.onKeyPressCallback) this.onKeyPressCallback(this.command);
+    }
+
+	////////////////////////////////////////////////
+    // -- public
+
+    onFormat (callback) {
+        this.onFormatCallback = callback;
+    }
+
+    onPosition (callback) {
+        this.onPositionCallback = callback;
+    }
+
+    onKeyPress (callback) {
+        this.onKeyPressCallback = callback;
+    }
 }

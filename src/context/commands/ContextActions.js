@@ -1,6 +1,17 @@
+// actions
+import ContextFormatActions from "./ContextFormatActions.js";
+
+// helpers
 import ContextDOM from "../helpers/ContextDOM.js";
 import ContextTreeWalker from "../helpers/ContextTreeWalker.js";
 
+/**
+* @namespace Actions
+*
+* this class is interfaced into via the 
+* above imported actions, depending on
+* what the user requests
+*/
 export default class ContextActions {
 	constructor () {
 		this.DOM = new ContextDOM();
@@ -14,6 +25,8 @@ export default class ContextActions {
         this.details = {};
 	}
 
+    ///////////////////////////////////
+    // -- private
 	/**
 	* returns a node regular expression for
 	* the closing and opening tags of an HTML
@@ -47,6 +60,52 @@ export default class ContextActions {
 		return tmp;
 	}
 
+    /**
+    * gathers information about the selection and 
+    * lists the details about it in an object
+    *
+    * @return {void}
+     */
+    #setDetails () {
+        const startLine = this.DOM.getLine(this.ctxStart);
+        const endLine = this.DOM.getLine(this.ctxEnd);
+        const startNode = this.DOM.nodeRoot(this.ctxStart, this.format);
+        const endNode = this.DOM.nodeRoot(this.ctxEnd, this.format);
+        let startFormat = startNode.nodeName.toLowerCase();
+        let endFormat = endNode.nodeName.toLowerCase();
+        const isMultiline = startLine !== endLine;
+
+        let startSiblingFormat;
+        let endSiblingFormat;
+
+        if (startFormat !== this.format && this.ctxStart.nextSibling && !this.ctxStart.nextSibling.nodeName.match(/#text/)) {
+            const nextNode = this.ctxStart.nextSibling.querySelector(this.format);
+
+            startFormat = nextNode ? nextNode.nodeName.toLowerCase() : this.ctxStart.nextSibling.nodeName.toLowerCase();
+        }
+
+        if (endFormat !== this.format && this.ctxEnd.previousSibling && !this.ctxEnd.previousSibling.nodeName.match(/#text/)) {
+            const prevNode = this.ctxEnd.previousSibling.querySelector(this.format);
+
+            endFormat = prevNode ? prevNode.nodeName.toLowerCase() : this.ctxEnd.previousSibling.nodeName.toLowerCase();
+        }
+
+        this.details = {
+            ...this.details,
+            startLine,
+            endLine,
+            startFormat,
+            endFormat,
+            startNode,
+            endNode,
+            isMultiline,
+            startSiblingFormat,
+            endSiblingFormat,
+        };
+    }
+
+    ///////////////////////////////////
+    // -- public
 	/**
 	* sets the common requirements
 	* for the selection to work
@@ -66,7 +125,15 @@ export default class ContextActions {
 		this.range = range;
         this.format = format;
         this.editor = editor;
+
+        this.details = {};
 	}
+
+    getCaret (sel) {
+        const { baseNode } = sel;
+
+        return [ this.DOM.getParentsStr(baseNode), this.DOM.getParents(baseNode) ];
+    }
 
 	/**
 	* creates the start boundary
@@ -138,50 +205,10 @@ export default class ContextActions {
         if (prevNode && prevNode.nodeName.match(/#text/g) && !prevNode.textContent) prevNode.remove();
 
         this.#setDetails();
+
+        if (this.format.match(/style|styles/)) {}
+        else this.action = new ContextFormatActions(this, this.details);
 	}
-
-    /**
-    * gathers information about the selection and 
-    * lists the details about it in an object
-    *
-    * @return {void}
-     */
-    #setDetails () {
-        const startLine = this.DOM.getLine(this.ctxStart);
-        const endLine = this.DOM.getLine(this.ctxEnd);
-        const startNode = this.DOM.nodeRoot(this.ctxStart, this.format);
-        const endNode = this.DOM.nodeRoot(this.ctxEnd, this.format);
-        let startFormat = startNode.nodeName.toLowerCase();
-        let endFormat = endNode.nodeName.toLowerCase();
-        const isMultiline = startLine !== endLine;
-
-        let startSiblingFormat;
-        let endSiblingFormat;
-
-        if (startFormat !== this.format && this.ctxStart.nextSibling && !this.ctxStart.nextSibling.nodeName.match(/#text/)) {
-            const nextNode = this.ctxStart.nextSibling.querySelector(this.format);
-
-            startFormat = nextNode ? nextNode.nodeName.toLowerCase() : this.ctxStart.nextSibling.nodeName.toLowerCase();
-        }
-
-        if (endFormat !== this.format && this.ctxEnd.previousSibling && !this.ctxEnd.previousSibling.nodeName.match(/#text/)) {
-            const prevNode = this.ctxEnd.previousSibling.querySelector(this.format);
-
-            endFormat = prevNode ? prevNode.nodeName.toLowerCase() : this.ctxEnd.previousSibling.nodeName.toLowerCase();
-        }
-
-        this.details = {
-            startLine,
-            endLine,
-            startFormat,
-            endFormat,
-            startNode,
-            endNode,
-            isMultiline,
-            startSiblingFormat,
-            endSiblingFormat,
-        };
-    }
 
     /**
     * gets the selected fragments
@@ -235,145 +262,118 @@ export default class ContextActions {
         callback();
     }
 
+    highlightNode (node) {
+        this.range.selectNodeContents(node);
+
+        const extract = this.range.extractContents();
+
+        this.ctxSelect.appendChild(extract);
+        this.ctxSelect.before(this.ctxStart);
+        this.ctxSelect.after(this.ctxEnd);
+
+        this.highlight();
+    }
+
     /**
-    * wraps a selection in the format
+    * selects a specified node and wraps
+    * it in the ctxSelect node with the 
+    * ctxStart and ctxEnd boundaries
+    *
+    * @param {HTMLElement} node
+    * the node to select
     *
     * @return {void}
     */
-    wrap () {
-        const { isMultiline } = this.details;
-        const formats = [];
+    selectNode (node) {
+        this.range.selectNodeContents(this.ctxSelect);
 
-        this.getSelection(() => {
-            const formatNode = document.createElement(this.format);
-            const extract = this.range.extractContents();
+        const selExtract = this.range.extractContents();
 
-            formatNode.appendChild(extract);
+        this.ctxSelect.after(selExtract);
+        this.ctxSelect.remove();
 
-            this.exterminate(formatNode, this.format);
+        node.before(this.ctxStart);
+        node.after(this.ctxEnd);
+        this.highlight();
 
-            this.ctxSelect.appendChild(formatNode);
+        const extractStart = this.range.extractContents();
 
-            this.range.insertNode(this.ctxSelect);
+        this.ctxSelect.appendChild(extractStart);
 
-            this.range.selectNodeContents(this.ctxSelect);
+        this.ctxStart.after(this.ctxSelect);
 
-            const extractSelect = this.range.extractContents();
-
-            this.ctxSelect.after(extractSelect);
-
-            formats.push(formatNode);
-
-            this.ctxSelect.remove();
-        });
-
-        //if (!isMultiline) {
-            //formats[0].childNodes[0].before(this.ctxStart);
-            //formats[formats.length - 1].appendChild(this.ctxEnd);
-        //}
+        this.exterminate(this.ctxSelect, this.format);
     }
 
-    unwrap () {
-        const {
-            startNode,
-            isMultiline
-        } = this.details;
+    /**
+    * extracts the content before and after
+    * the ctxSelect node (excluding the 
+    * start and end boundaries) and returns
+    * an array with the before and after 
+    * points of the selection
+    *
+    * @param {HTMLElement} node
+    * an ancestor node that contains the 
+    * selection nodes
+    *
+    * @return {array}
+    */
+    extractSurrounds (node) {
+        const nodeType = node.nodeName.toLowerCase();
 
-        if (isMultiline) {
-            this.getSelection(line => {
-                const extract = this.range.extractContents();
+        this.range.setStartBefore(node);
+        this.range.setEndBefore(this.ctxStart);
 
-                this.ctxSelect.appendChild(extract);
+        const extractBefore = this.range.extractContents();
 
-                this.range.insertNode(this.ctxSelect);
+        this.range.setStartAfter(this.ctxEnd);
+        this.range.setEndAfter(node);
 
-                this.exterminate(this.ctxSelect, this.format);
+        const extractAfter = this.range.extractContents();
 
-                this.range.selectNodeContents(this.ctxSelect);
+        return [ extractBefore, extractAfter ];
+    }
 
-                const selectExtract = this.range.extractContents();
+    /**
+    * sets the start and end boundaries
+    * the selection must be in place 
+    * before this method is used (setSelection())
+    *
+    * @return {void}
+    */
+    setBoundaries () {
+        this.ctxSelect.before(this.ctxStart);
+        this.ctxSelect.after(this.ctxEnd);
+    }
 
-                if (line.querySelector(`[data-role="ctx-start"]`)) {
-                    this.ctxSelect.before(this.ctxStart);
-                }
-                else if (line.querySelector(`[data-role="ctx-end"]`)) {
-                    this.ctxSelect.after(this.ctxEnd);
-                }
+    /**
+    * wraps the selection in the ctxSelect node
+    *
+    * @return {void}
+    */
+    setSelection () {
+        const extract = this.range.extractContents();
 
-                this.ctxSelect.after(selectExtract);
+        this.ctxSelect.appendChild(extract);
 
-                this.ctxSelect.remove();
-            });
+        this.range.insertNode(this.ctxSelect);
+    }
 
-            return;
-        }
-
-        this.getSelection(() => {
-            const extract = this.range.extractContents();
-
-            this.ctxSelect.appendChild(extract);
-
-            this.range.insertNode(this.ctxSelect);
-
-            this.ctxSelect.before(this.ctxStart);
-            this.ctxSelect.after(this.ctxEnd);
-
-            const containsFormat = this.ctxSelect.querySelector(this.format);
-
-            this.exterminate(this.ctxSelect, this.format);
-
-            if (!containsFormat) {
-                const root = this.DOM.getRootFormat(this.ctxSelect)
-
-                this.range.setStartBefore(root);
-                this.range.setEndBefore(this.ctxStart);
-
-                const extractBefore = this.range.extractContents();
-
-                this.range.setStartAfter(this.ctxEnd);
-                this.range.setEndAfter(root);
-
-                const extractAfter = this.range.extractContents();
-
-                this.ctxSelect.appendChild(extract);
-                this.ctxStart.after(this.ctxSelect);
-
-                // wrap the root
-                this.range.selectNodeContents(this.ctxSelect);
-
-                const selExtract = this.range.extractContents();
-
-                this.ctxSelect.after(selExtract);
-                this.ctxSelect.remove();
-
-                startNode.before(this.ctxStart);
-                startNode.after(this.ctxEnd);
-                this.highlight();
-
-                const extractStart = this.range.extractContents();
-
-                this.ctxSelect.appendChild(extractStart);
-
-                this.ctxStart.after(this.ctxSelect);
-
-                this.exterminate(this.ctxSelect, this.format);
-
-                // insert before and after content
-                this.ctxStart.before(extractBefore);
-                this.ctxEnd.after(extractAfter);
-
-                // take content out of select and remove select below...
-                this.range.selectNodeContents(this.ctxSelect);
-
-                const clearSelExtract = this.range.extractContents();
-
-                this.ctxSelect.after(clearSelExtract);
-
-                this.ctxSelect.remove();
-
-                return;
-            }
-
+    /**
+    * clears the ctxSelect node, boundary nodes
+    * have to be established for this method to be 
+    * used effectively
+    *
+    * @param {HTMLElement} [fragment]
+    * (optional) only used for multiline selections
+    * a fragment expected to contain a start 
+    * boundary or an end boundary, this is for
+    * multiline selections
+    *
+    * @return {void}
+    */
+    clearSelection (fragment) {
+        if (!fragment) {
             this.range.selectNodeContents(this.ctxSelect);
 
             const clearSelExtract = this.range.extractContents();
@@ -381,7 +381,24 @@ export default class ContextActions {
             this.ctxSelect.after(clearSelExtract);
 
             this.ctxSelect.remove();
-        });
+
+            return;
+        }
+
+        this.range.selectNodeContents(this.ctxSelect);
+
+        const selectExtract = this.range.extractContents();
+
+        if (fragment.querySelector(`[data-role="ctx-start"]`)) {
+            this.ctxSelect.before(this.ctxStart);
+        }
+        else if (fragment.querySelector(`[data-role="ctx-end"]`)) {
+            this.ctxSelect.after(this.ctxEnd);
+        }
+
+        this.ctxSelect.after(selectExtract);
+
+        this.ctxSelect.remove();
     }
 
     /**

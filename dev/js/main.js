@@ -13,9 +13,9 @@ ctx.components.get("ContextFormats", format => {
 		//set("bold", "strong", "b");
 	//}
 
-	//format.add = add => {
-		//add("underline", "u", "_");
-	//}
+    //format.add = add => {
+        //add("underline", "u", "_");
+    //}
 
 	//format.remove = remove => {
 		//remove("bold");

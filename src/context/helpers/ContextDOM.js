@@ -74,4 +74,52 @@ export default class ContextDOM {
 
 		return nodes;
 	}
+
+    /**
+    * gets the ancestor nodes from a reference child
+    * node as a string
+    *
+    * @param {HTMLElement} start
+    * the node to start the ancestor lookup from
+    *
+    * @return {array}
+    */
+    getParentsStr (start) {
+        let parent = start;
+        const parents = [];
+
+        while (parent) {
+            if (parent && parent.nodeName.toLowerCase() === "body") break;
+
+            if (!parent.nodeName.match(/#text/)) parents.push(parent.nodeName.toLowerCase());
+
+            parent = parent.parentNode;
+        }
+
+        return parents;
+    }
+
+    /**
+    * gets the ancestor nodes from a reference child
+    * node as HTML Elements
+    *
+    * @param {HTMLElement} start
+    * the node to start the ancestor lookup from
+    *
+    * @return {array}
+    */
+    getParents (start) {
+        let parent = start;
+        const parents = [];
+
+        while (parent) {
+            if (parent && parent.nodeName.toLowerCase() === "body") break;
+
+            if (!parent.nodeName.match(/#text/)) parents.push(parent);
+
+            parent = parent.parentNode;
+        }
+
+        return parents;
+    }
 }

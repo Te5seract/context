@@ -12,30 +12,24 @@ export default class ContextCommands extends ContextActions {
 		this.settings = {...this.settings, ...settings };
 	}
 
-	trueFalse (value) {
-		return ( value || !value );
-	}
-
 	exec (format, settings) {
 		const sel = this.editor.getSelection();
+        const range = sel.getRangeAt(0);
 		const { isCollapsed } = sel;
 
+        super.set(
+            range, 
+            format,
+            this.editor,
+            settings
+        );
+
 		if (!isCollapsed) {
-			const range = sel.getRangeAt(0);
-
-			super.set(
-				range, 
-                format,
-				this.editor
-			);
-
 			super.slice();
 
 			const { 
                 startFormat, 
                 endFormat,
-                //startSiblingFormat,
-                //endSiblingFormat
             } = this.details;
 
             if (startFormat !== format || endFormat !== format) {
@@ -50,18 +44,16 @@ export default class ContextCommands extends ContextActions {
 	#unwrap () {
 		if (this.settings.debug) console.log("unwrap");
 
-        super.unwrap();
-        super.highlight();
-        super.deselect();
+        this.unwrap();
+        this.highlight();
+        this.deselect();
 	}
 
 	#wrap () {
-        const { format } = this.details;
-
 		if (this.settings.debug) console.log("wrap");
 
-        super.wrap();
-        super.highlight();
-        super.deselect();
+        this.wrap();
+        this.highlight();
+        this.deselect();
     }
 }

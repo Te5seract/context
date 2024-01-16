@@ -4,6 +4,7 @@ import ContextWrapper from "./components/ContextWrapper.js";
 import ContextEditor from "./components/ContextEditor.js";
 import ContextToolbar from "./components/ContextToolbar.js";
 import ContextFormats from "./components/ContextFormats.js";
+import ContextStatus from "./components/ContextStatus.js";
 
 export default class Context {
 	/**
@@ -43,6 +44,14 @@ export default class Context {
 					</ContextToolbar>
 
 					<ContextEditor></ContextEditor>
+
+                    <ContextStatus 
+                        formats="ContextFormats"
+                        editor="ContextEditor"
+                        word-count="true"
+                        lineage="true"
+                    >
+                    </ContextStatus>
 				</ContextWrapper>
 			`;
 		}
@@ -61,6 +70,7 @@ export default class Context {
 		this.components.register(ContextEditor, "iframe");
 		this.components.register(ContextToolbar, "div");
 		this.components.register(ContextFormats, "div");
+        this.components.register(ContextStatus, "div");
 
 		this.components.get("ContextFormats", formats => {
 			formats.set = set => {

@@ -135,9 +135,26 @@ export default class ContextComponent {
 			nodeName : name.toLowerCase(),
 			interpolate : this.#interpolator,
 			replacement : nodeReplacement,
+            get : (callback) => callback && callback(instance.prototype),
+            getProps : this.#getProps.bind(this, name),
 			instance
 		};
 	}
+
+    #getProps (name, ...args) {
+        if (args.length === 2) {
+            const [ argA, argB ] = args;
+
+            const callback = typeof argA === "function" ? argA : argB;
+            const prop = typeof argA === "string" ? argA : argB;
+
+            callback && callback(this.nodes[name].props[prop].props || this.nodes[name].props[prop]);
+
+            return;
+        }
+
+        if (typeof args[0] === "string") return this.nodes[name].props[args[0]];
+    }
 
 	/**
 	* optimizes and inserts the faux markup into
