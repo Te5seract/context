@@ -75,21 +75,6 @@ export default class ContextActions {
         let endFormat = endNode.nodeName.toLowerCase();
         const isMultiline = startLine !== endLine;
 
-        let startSiblingFormat;
-        let endSiblingFormat;
-
-        if (startFormat !== this.format && this.ctxStart.nextSibling && !this.ctxStart.nextSibling.nodeName.match(/#text/)) {
-            const nextNode = this.ctxStart.nextSibling.querySelector(this.format);
-
-            startFormat = nextNode ? nextNode.nodeName.toLowerCase() : this.ctxStart.nextSibling.nodeName.toLowerCase();
-        }
-
-        if (endFormat !== this.format && this.ctxEnd.previousSibling && !this.ctxEnd.previousSibling.nodeName.match(/#text/)) {
-            const prevNode = this.ctxEnd.previousSibling.querySelector(this.format);
-
-            endFormat = prevNode ? prevNode.nodeName.toLowerCase() : this.ctxEnd.previousSibling.nodeName.toLowerCase();
-        }
-
         this.details = {
             ...this.details,
             startLine,
@@ -98,9 +83,7 @@ export default class ContextActions {
             endFormat,
             startNode,
             endNode,
-            isMultiline,
-            startSiblingFormat,
-            endSiblingFormat,
+            isMultiline
         };
     }
 
@@ -208,6 +191,8 @@ export default class ContextActions {
 
         if (this.format.match(/style|styles/)) {}
         else this.action = new ContextFormatActions(this, this.details);
+
+        this.setDetails();
 	}
 
     /**

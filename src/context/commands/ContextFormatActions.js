@@ -16,6 +16,34 @@ export default class ContextFormatActions extends ContextActionExtension {
     }
 
     /**
+    * gathers information about the selection and 
+    * lists the details about it in an object
+    *
+    * @return {void}
+     */
+    setDetails () {
+        let { startFormat, endFormat } = this.details;
+
+        if (startFormat !== this.format && this.ctxStart.nextSibling && !this.ctxStart.nextSibling.nodeName.match(/#text/)) {
+            const nextNode = this.ctxStart.nextSibling.querySelector(this.format);
+
+            startFormat = nextNode ? nextNode.nodeName.toLowerCase() : this.ctxStart.nextSibling.nodeName.toLowerCase();
+        }
+
+        if (endFormat !== this.format && this.ctxEnd.previousSibling && !this.ctxEnd.previousSibling.nodeName.match(/#text/)) {
+            const prevNode = this.ctxEnd.previousSibling.querySelector(this.format);
+
+            endFormat = prevNode ? prevNode.nodeName.toLowerCase() : this.ctxEnd.previousSibling.nodeName.toLowerCase();
+        }
+
+        this.details = {
+            ...this.details,
+            startFormat,
+            endFormat
+        };
+    }
+
+    /**
     * wraps a selection in the format
     *
     * @return {void}
@@ -112,6 +140,8 @@ export default class ContextFormatActions extends ContextActionExtension {
             // the ctxSelect node, at the moment the before and after will
             // match the selection, meaning that there will be duplicate
             // siblings
+
+            //console.log(this.ctxSelect.previousSibling);
 
             // take content out of select and remove select below...
             this.clearSelection();
