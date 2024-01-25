@@ -5,6 +5,9 @@ import ContextFormatActions from "./ContextFormatActions.js";
 import ContextDOM from "../helpers/ContextDOM.js";
 import ContextTreeWalker from "../helpers/ContextTreeWalker.js";
 
+// command helpers
+import ContextOptimize from "./ContextOptimize.js";
+
 /**
 * @namespace Actions
 *
@@ -17,6 +20,7 @@ export default class ContextActions {
 		this.DOM = new ContextDOM();
 		this.treeWalker = new ContextTreeWalker();
 		this.ctxSelection = [];
+        this.optimize = new ContextOptimize(this);
 
 		// dynamic
 		this.ctxStart = this.start();
@@ -316,6 +320,8 @@ export default class ContextActions {
 
         const extractAfter = this.range.extractContents();
 
+        this.removeBoundaries();
+
         return [ extractBefore, extractAfter ];
     }
 
@@ -329,6 +335,11 @@ export default class ContextActions {
     setBoundaries () {
         this.ctxSelect.before(this.ctxStart);
         this.ctxSelect.after(this.ctxEnd);
+    }
+
+    removeBoundaries () {
+        this.ctxStart.remove();
+        this.ctxEnd.remove();
     }
 
     /**
@@ -401,6 +412,7 @@ export default class ContextActions {
     * @return {void}
     */
     exterminate (node, type) {
+        node.innerHTML = node.innerHTML.replace(/<\w+><\/\w+>/g, "");
         node.innerHTML = node.innerHTML.replace(this.#nodeReg(type), "");
     }
 
@@ -423,5 +435,51 @@ export default class ContextActions {
     deselect () {
         this.ctxStart.remove();
         this.ctxEnd.remove();
+    }
+
+    getSelectionSiblings () {
+        if (!this.cxtStart && !this.ctxEnd) throw new Error("CTX boundaries have not been set");
+
+        const prevNode = this.ctxStart.previousSibling;
+        const prevFormat = prevNode && !prevNode.nodeName.match(/#text/) ? prevNode.nodeName.toLowerCase() : null;
+        const nextNode = this.ctxEnd.nextSibling;
+        const nextFormat = nextNode && !nextNode.nodeName.match(/#text/) ? nextNode.nodeName.toLowerCase() : null;
+
+        return { 
+            prev : { 
+                prevNode,
+                prevFormat
+            },
+            next : {
+                nextNode,
+                nextFormat
+            }
+        };
+    }
+
+    moveSelectionTo (node, mode) {
+        if (mode.match(/append|add|suffix|after/i)) {
+            node.appendChild(this.ctxSelect);
+        }
+        else if (mode.match(/prepend|before|prefix|shift/)) {
+            node.childNodes[0].before(this.ctxSelect);
+        }
+
+        this.setBoundaries();
+    }
+
+    moveNodeContentsTo (node, target, mode) {
+        this.range.selectNodeContents(node);
+
+        const extract = this.range.extractContents();
+
+        if (mode.match(/append|add|suffix|after/i)) {
+            target.appendChild(extract);
+        }
+        else if (mode.match(/prepend|before|prefix|shift/)) {
+            target.childNodes[0].before(extract);
+        }
+
+        node.remove();
     }
 }

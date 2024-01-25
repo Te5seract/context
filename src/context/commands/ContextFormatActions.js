@@ -1,4 +1,5 @@
 import ContextActionExtension from "./ContextActionExtension.js";
+import ContextDOM from "../helpers/ContextDOM.js";
 
 /**
 * @namespace Actions
@@ -22,7 +23,7 @@ export default class ContextFormatActions extends ContextActionExtension {
     * @return {void}
      */
     setDetails () {
-        let { startFormat, endFormat } = this.details;
+        let { startFormat, endFormat, startNode, endNode } = this.details;
 
         if (startFormat !== this.format && this.ctxStart.nextSibling && !this.ctxStart.nextSibling.nodeName.match(/#text/)) {
             const nextNode = this.ctxStart.nextSibling.querySelector(this.format);
@@ -53,6 +54,15 @@ export default class ContextFormatActions extends ContextActionExtension {
         const formats = [];
 
         this.getSelection(() => {
+            const biasMerge = this.mergeBias(this.format);
+
+            if (biasMerge) { 
+                this.setBoundaries();
+                this.clearSelection();
+
+                return; 
+            }
+
             const formatNode = document.createElement(this.format);
             const extract = this.range.extractContents();
 
@@ -75,7 +85,7 @@ export default class ContextFormatActions extends ContextActionExtension {
 
             this.ctxSelect.after(extractSelect);
 
-            formats.push(formatNode);
+            //formats.push(formatNode);
 
             this.ctxSelect.remove();
         });
@@ -90,7 +100,8 @@ export default class ContextFormatActions extends ContextActionExtension {
     unwrap () {
         const {
             startNode,
-            isMultiline
+            isMultiline,
+            endNode
         } = this.details;
 
         if (isMultiline) {
@@ -108,42 +119,39 @@ export default class ContextFormatActions extends ContextActionExtension {
         this.getSelection(() => {
             this.setSelection();
 
-            const containsFormat = this.ctxSelect.querySelector(this.format);
+            const isLine = this.DOM.parentIsLine(startNode);
+            const isFormat = startNode.nodeName.toLowerCase() === this.format;
+            const nodesMatch = startNode === endNode;
 
-            if (containsFormat) {
-                this.exterminate(this.ctxSelect, this.format);
+            let before;
+            let after;
 
-                this.clearSelection();
+            this.exterminate(this.ctxSelect, this.format);
 
-                return;
+            if (!isLine && isFormat && nodesMatch || isLine && isFormat && nodesMatch) {
+                [ before, after ] = this.extractSurrounds(startNode);
+                this.setBoundaries();
             }
 
-            // extractSurrounds(root)
-            // get the overall surrounding format
-            // clear the content before and after the selection
-            const root = this.DOM.getRootFormat(this.ctxSelect)
-            const rootNode = root.nodeName.toLowerCase();
-            const [ before, after ] = this.extractSurrounds(root);
+            if (!isLine && isFormat && nodesMatch) {
+                this.ctxStart.before(before);
 
-            // selectNode(startNode)
-            // wrap the root format
-            //this.selectNode(startNode)
-            this.selectNode(root)
+                startNode.after(this.ctxSelect);
 
-            // insert before and after content
-            this.ctxStart.before(before);
-            this.ctxEnd.after(after);
+                this.ctxSelect.after(after);
+            }
 
-            // IMPORTANT NEXT TASK
-            // here, there should be a test to see if the the content before
-            // the selection has the same wrapper node as the content inside
-            // the ctxSelect node, at the moment the before and after will
-            // match the selection, meaning that there will be duplicate
-            // siblings
+            if (isLine && isFormat && nodesMatch) {
+                this.removeBoundaries();
+                this.selectNode(startNode);
+                this.setBoundaries();
 
-            //console.log(this.ctxSelect.previousSibling);
+                this.ctxStart.before(before);
+                this.ctxEnd.after(after);
+            }
 
-            // take content out of select and remove select below...
+            this.setBoundaries();
+            this.optimizeSelection();
             this.clearSelection();
         });
     }

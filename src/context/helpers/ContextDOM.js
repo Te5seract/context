@@ -22,6 +22,16 @@ export default class ContextDOM {
 			parent = parent.parentNode;
 		}
 	}
+    
+    parentIsLine (node) {
+        if (node.parentNode.parentNode && node.parentNode.parentNode.nodeName.toLowerCase() === "body") return true;
+
+        if (node.parentNode && node.parentNode.nodeName.toLowerCase() === "body") return true;
+
+        if (!node.parentNode.parentNode) return true;
+
+        return false;
+    }
 
 	/**
 	* gets a line which should be a block element
