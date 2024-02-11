@@ -1,6 +1,7 @@
 import ContextActions from "./ContextActions.js";
 import ContextOptimize from "../actions/ContextOptimize.js";
 import ContextOperations from "../actions/ContextOperations.js";
+import ContextCaret from "../actions/ContextCaret.js";
 
 // action methods
 import ContextSelect from "../actions/ContextSelect.js";
@@ -21,6 +22,7 @@ export default class ContextCommands extends ContextActions {
         this.setActionMethods(ContextSelect, "select");
         this.setActionMethods(ContextOptimize, "optimize");
         this.setActionMethods(ContextOperations, "operation");
+        this.setActionMethods(ContextCaret, "caret");
 
         // command libraries
         this.commandLibs = {

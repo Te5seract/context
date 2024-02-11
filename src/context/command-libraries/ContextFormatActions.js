@@ -176,36 +176,10 @@ export default class ContextFormatActions {
     split () {
         const { caretPrev, caretNext, caretNode, caretNextFormat, caretPrevFormat } = this.details;
 
-        this.range.insertNode(this.ctxCaret);
-
-        const parentFormats = this.DOM.getFormats(this.ctxCaret, this.format);
+		this.caret.set();
 
         if (!caretNextFormat) {
-            caretNode.after(this.ctxCaret);
-
-            const scoutParents = this.DOM.getFormats(this.ctxCaret);
-            const createNodes = parentFormats.filter(node => !scoutParents.includes(node));
-            const [ nest, focus ] = this.DOM.createNodeNest(createNodes);
-
-            if (nest) {
-                this.range.setStartAfter(caretNode);
-                this.range.insertNode(nest);
-
-                focus.innerHTML = "&#xFEFF;";
-
-                this.editor.body.focus();
-
-                return;
-            }
-
-            const fragment = this.range.createContextualFragment("&#xFEFF;");
-
-            this.range.setStartAfter(caretNode);
-            this.range.insertNode(fragment);
-
-            this.editor.body.focus();
+			this.caret.exitRight();
         }
-
-        //console.log(caretPrevFormat, caretNextFormat);
     }
 }
