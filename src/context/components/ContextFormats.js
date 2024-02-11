@@ -32,7 +32,7 @@ export default class ContextFormats {
 		this.debugmode = debugmode;
 
 		// static
-		this.command = new ContextCommands(this.editor.contentDocument);
+		this.command = new ContextCommands(this.editor.contentDocument, this.editor, "format");
 
 		// hooks
 		if (this.set) this.set(this.#set.bind(this));
@@ -78,6 +78,8 @@ export default class ContextFormats {
 		button.dataset.format = format;
 		button.dataset.name = name;
 		button.innerHTML = icon;
+        button.tabIndex = "-1";
+        button.type = "button";
 
 		this.node.textContent += `{${name}}`;
 
@@ -147,7 +149,7 @@ export default class ContextFormats {
 			if (formats.match(formatReg)) {
 				this.node.appendChild(format.button);
 
-				format.button.addEventListener("pointerdown", this.#format);
+				format.button.addEventListener("pointerup", this.#format);
                 this.editor.contentDocument.body.addEventListener("pointerup", this.#cursorPosition);
                 this.editor.contentDocument.body.addEventListener("keyup", this.#keyPressed);
 			}

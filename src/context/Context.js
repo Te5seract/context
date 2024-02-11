@@ -39,8 +39,7 @@ export default class Context {
 			this.layoutMarkup = `
 				<ContextWrapper>
 					<ContextToolbar>
-						<ContextFormats editor="ContextEditor">
-						</ContextFormats>
+						<ContextFormats editor="ContextEditor"></ContextFormats>
 					</ContextToolbar>
 
 					<ContextEditor></ContextEditor>

@@ -99,11 +99,11 @@ export default class ContextDOM {
         const parents = [];
 
         while (parent) {
+            parent = parent.parentNode;
+
             if (parent && parent.nodeName.toLowerCase() === "body") break;
 
             if (!parent.nodeName.match(/#text/)) parents.push(parent.nodeName.toLowerCase());
-
-            parent = parent.parentNode;
         }
 
         return parents;
@@ -131,5 +131,29 @@ export default class ContextDOM {
         }
 
         return parents;
+    }
+
+    createNodeNest (nodes) {
+        let element = null
+        let initialElement = null;
+
+        nodes.forEach(node => {
+            const newElement = document.createElement(node);
+
+            if (!element) { 
+                element = newElement; 
+                initialElement = newElement;
+
+                return;
+            }
+
+            if (element) {
+                element.appendChild(newElement);
+
+                element = newElement;
+            }
+        });
+
+        return [ initialElement, element ];
     }
 }

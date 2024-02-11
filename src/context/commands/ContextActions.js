@@ -1,12 +1,9 @@
-// actions
-import ContextFormatActions from "./ContextFormatActions.js";
-
 // helpers
 import ContextDOM from "../helpers/ContextDOM.js";
 import ContextTreeWalker from "../helpers/ContextTreeWalker.js";
 
 // command helpers
-import ContextOptimize from "./ContextOptimize.js";
+//import ContextOptimize from "./ContextOptimize.js";
 
 /**
 * @namespace Actions
@@ -20,30 +17,17 @@ export default class ContextActions {
 		this.DOM = new ContextDOM();
 		this.treeWalker = new ContextTreeWalker();
 		this.ctxSelection = [];
-        this.optimize = new ContextOptimize(this);
 
 		// dynamic
-		this.ctxStart = this.start();
-		this.ctxEnd = this.end();
-		this.ctxSelect = this.select();
+		this.ctxStart = this.createStart();
+		this.ctxEnd = this.createEnd();
+		this.ctxSelect = this.createSelect();
+        this.ctxCaret = this.createCaret();
         this.details = {};
 	}
 
     ///////////////////////////////////
     // -- private
-	/**
-	* returns a node regular expression for
-	* the closing and opening tags of an HTML
-	* element
-	*
-	* @param {string} type
-	* the node tag type
-	*
-	* @return {string}
-	*/
-	#nodeReg (tag) {
-		return new RegExp(`<${ tag }>|<\/${ tag }>`, "gi");
-	}
 
 	/**
 	* creates a temporary node to contain and 
@@ -71,24 +55,72 @@ export default class ContextActions {
     * @return {void}
      */
     #setDetails () {
-        const startLine = this.DOM.getLine(this.ctxStart);
-        const endLine = this.DOM.getLine(this.ctxEnd);
-        const startNode = this.DOM.nodeRoot(this.ctxStart, this.format);
-        const endNode = this.DOM.nodeRoot(this.ctxEnd, this.format);
-        let startFormat = startNode.nodeName.toLowerCase();
-        let endFormat = endNode.nodeName.toLowerCase();
-        const isMultiline = startLine !== endLine;
+        if (this.editor.querySelector(`[data-role="ctx-start"]`) && this.editor.querySelector(`[data-role="ctx-end"]`)) {
+            const startLine = this.DOM.getLine(this.ctxStart);
+            const endLine = this.DOM.getLine(this.ctxEnd);
+            const startNode = this.DOM.nodeRoot(this.ctxStart, this.format);
+            const endNode = this.DOM.nodeRoot(this.ctxEnd, this.format);
+            let startFormat = startNode.nodeName.toLowerCase();
+            let endFormat = endNode.nodeName.toLowerCase();
+            const isMultiline = startLine !== endLine;
+
+            this.details = {
+                ...this.details,
+                startLine,
+                endLine,
+                startFormat,
+                endFormat,
+                startNode,
+                endNode,
+                isMultiline
+            };
+
+            return;
+        }
+
+        let nextNode = this.ctxCaret.nextSibling;
+        let prevNode = this.ctxCaret.previousSibling;
+
+        if (nextNode && nextNode.nodeName.match(/#text/) && !nextNode.textContent) {
+            nextNode.remove();
+
+            nextNode = this.ctxCaret.nextSibling ? this.ctxCaret.nextSibling : null;
+        }
+
+        if (prevNode && prevNode.nodeName.match(/#text/) && !prevNode.textContent) {
+            prevNode.remove();
+
+            prevNode = this.ctxCaret.previousSibling ? this.ctxCaret.previousSibling : null;
+        }
+
+        const caretLine = this.DOM.getLine(this.ctxCaret);
+        const caretNode = this.DOM.nodeRoot(this.ctxCaret, this.format);
+        const caretFormat = caretNode.nodeName.toLowerCase();
+        const caretPrev = prevNode;
+        const caretNext = nextNode;
+        const caretPrevFormat = caretPrev ? caretPrev.nodeName.toLowerCase() : null;
+        const caretNextFormat = caretNext ? caretNext.nodeName.toLowerCase() : null;
+        const caretParents = this.DOM.getFormats(this.ctxCaret);
 
         this.details = {
             ...this.details,
-            startLine,
-            endLine,
-            startFormat,
-            endFormat,
-            startNode,
-            endNode,
-            isMultiline
+            caretLine,
+            caretNode,
+            caretFormat,
+            caretPrev,
+            caretNext,
+            caretParents,
+            caretPrevFormat,
+            caretNextFormat
         };
+    }
+
+    #setCommandLogic (logic) {
+        const methods = Object.getOwnPropertyNames(logic.prototype).filter(method => !method.match(/constructor/i));
+
+        methods.forEach(method => {
+            this[method] = logic.prototype[method];
+        });
     }
 
     ///////////////////////////////////
@@ -116,6 +148,25 @@ export default class ContextActions {
         this.details = {};
 	}
 
+    /**
+    * sets the command library to use
+    * for all formatting actions
+    *
+    * @return {void}
+    */
+    setCommandLib (commandLogic) {
+        this.#setCommandLogic(commandLogic);
+    }
+
+    /**
+    * gets the node the caret is currently
+    * within
+    *
+    * @param {object} sel
+    * the selection object
+    *
+    * @return {array}
+    */
     getCaret (sel) {
         const { baseNode } = sel;
 
@@ -128,7 +179,7 @@ export default class ContextActions {
 	*
 	* @return {HTMLElement}
 	*/
-	start () {
+	createStart () {
 		const ctxStart = document.createElement("span");
 
 		ctxStart.dataset.role = "ctx-start";
@@ -142,7 +193,7 @@ export default class ContextActions {
 	*
 	* @return {HTMLElement}
 	*/
-	end () {
+	createEnd () {
 		const ctxEnd = document.createElement("span");
 
 		ctxEnd.dataset.role = "ctx-end";
@@ -156,13 +207,27 @@ export default class ContextActions {
 	*
 	* @return {HTMLElement}
 	*/
-	select () {
+	createSelect () {
 		const ctxSelect = document.createElement("span");
 
 		ctxSelect.dataset.role = "ctx-select";
 
 		return ctxSelect;
 	}
+
+    /**
+    * creates the caret (cursor) to indicate
+    * the cursor position
+    *
+    * @return {HTMLElement}
+    */
+    createCaret () {
+        const ctxCaret = document.createElement("span");
+
+        ctxCaret.dataset.role = "ctx-caret";
+
+        return ctxCaret;
+    }
 
 	/**
 	* places the start and end boundaries
@@ -172,7 +237,7 @@ export default class ContextActions {
 	*
 	* @return {void}
 	*/
-	slice (range) {
+	slice (commandLogic) {
 		const { startOffset, startContainer } = this.range;
 
 		this.range.collapse();
@@ -193,293 +258,46 @@ export default class ContextActions {
 
         this.#setDetails();
 
-        if (this.format.match(/style|styles/)) {}
-        else this.action = new ContextFormatActions(this, this.details);
-
         this.setDetails();
 	}
 
+    collapsedCaret () {
+		const { startOffset, startContainer } = this.range;
+
+        this.range.insertNode(this.ctxCaret);
+
+        this.#setDetails();
+
+        const { caretFormat } = this.details;
+
+        const isFormatted = caretFormat === this.format;
+
+        this.details = { ...this.details, isFormatted };
+
+        //this.setDetails();
+    }
+
     /**
-    * gets the selected fragments
-    * of text for formatting
+    * sets action methods to the 
+    * context actions class
     *
-    * @param {CallableFunction} callback
-    * the callback fires once for each selection
-    * fragment
+    * @param {object} instance
+    * a class that contains action methods 
     *
-    * @param {int} steps
-    * the number of steps to perform before 
-    * stopping
+    * @param {string} namespace
+    * what the methods should be accessed under
     *
     * @return {void}
     */
-    getSelection (callback, steps) {
-        const { startLine, endLine, isMultiline } = this.details;
-        let i = 0;
+    setActionMethods (instance, namespace) {
+        if (namespace) {
+            this[namespace] = {};
 
-        if (isMultiline) {
-            this.treeWalker.walkAtoB(startLine, endLine, ({ prev, current, next }) => {
-                if (i === steps) return;
+            const methods = Object.getOwnPropertyNames(instance.prototype).filter(method => !method.match(/constructor/));
 
-                // first
-                if (!prev) {
-                    this.range.setStartAfter(this.ctxStart);
-                    this.range.setEnd(current, current.childNodes.length);
-                }
-
-                if (prev && next) {
-                    this.range.setStart(current, 0);
-                    this.range.setEnd(current, current.childNodes.length);
-                }
-
-                if (!next) {
-                    this.range.setStart(current, 0);
-                    this.range.setEndBefore(this.ctxEnd);
-                }
-
-                callback(current);
-
-                i++;
+            methods.forEach(method => {
+                this[namespace][method] = instance.prototype[method].bind(this);
             });
-
-            return;
         }
-
-        this.range.setStartAfter(this.ctxStart);
-        this.range.setEndBefore(this.ctxEnd);
-
-        callback();
-    }
-
-    highlightNode (node) {
-        this.range.selectNodeContents(node);
-
-        const extract = this.range.extractContents();
-
-        this.ctxSelect.appendChild(extract);
-        this.ctxSelect.before(this.ctxStart);
-        this.ctxSelect.after(this.ctxEnd);
-
-        this.highlight();
-    }
-
-    /**
-    * selects a specified node and wraps
-    * it in the ctxSelect node with the 
-    * ctxStart and ctxEnd boundaries
-    *
-    * @param {HTMLElement} node
-    * the node to select
-    *
-    * @return {void}
-    */
-    selectNode (node) {
-        this.range.selectNodeContents(this.ctxSelect);
-
-        const selExtract = this.range.extractContents();
-
-        this.ctxSelect.after(selExtract);
-        this.ctxSelect.remove();
-
-        node.before(this.ctxStart);
-        node.after(this.ctxEnd);
-        this.highlight();
-
-        const extractStart = this.range.extractContents();
-
-        this.ctxSelect.appendChild(extractStart);
-
-        this.ctxStart.after(this.ctxSelect);
-
-        this.exterminate(this.ctxSelect, this.format);
-    }
-
-    /**
-    * extracts the content before and after
-    * the ctxSelect node (excluding the 
-    * start and end boundaries) and returns
-    * an array with the before and after 
-    * points of the selection
-    *
-    * @param {HTMLElement} node
-    * an ancestor node that contains the 
-    * selection nodes
-    *
-    * @return {array}
-    */
-    extractSurrounds (node) {
-        const nodeType = node.nodeName.toLowerCase();
-
-        this.range.setStartBefore(node);
-        this.range.setEndBefore(this.ctxStart);
-
-        const extractBefore = this.range.extractContents();
-
-        this.range.setStartAfter(this.ctxEnd);
-        this.range.setEndAfter(node);
-
-        const extractAfter = this.range.extractContents();
-
-        this.removeBoundaries();
-
-        return [ extractBefore, extractAfter ];
-    }
-
-    /**
-    * sets the start and end boundaries
-    * the selection must be in place 
-    * before this method is used (setSelection())
-    *
-    * @return {void}
-    */
-    setBoundaries () {
-        this.ctxSelect.before(this.ctxStart);
-        this.ctxSelect.after(this.ctxEnd);
-    }
-
-    removeBoundaries () {
-        this.ctxStart.remove();
-        this.ctxEnd.remove();
-    }
-
-    /**
-    * wraps the selection in the ctxSelect node
-    *
-    * @return {void}
-    */
-    setSelection () {
-        const extract = this.range.extractContents();
-
-        this.ctxSelect.appendChild(extract);
-
-        this.range.insertNode(this.ctxSelect);
-    }
-
-    /**
-    * clears the ctxSelect node, boundary nodes
-    * have to be established for this method to be 
-    * used effectively
-    *
-    * @param {HTMLElement} [fragment]
-    * (optional) only used for multiline selections
-    * a fragment expected to contain a start 
-    * boundary or an end boundary, this is for
-    * multiline selections
-    *
-    * @return {void}
-    */
-    clearSelection (fragment) {
-        if (!fragment) {
-            this.range.selectNodeContents(this.ctxSelect);
-
-            const clearSelExtract = this.range.extractContents();
-
-            this.ctxSelect.after(clearSelExtract);
-
-            this.ctxSelect.remove();
-
-            return;
-        }
-
-        this.range.selectNodeContents(this.ctxSelect);
-
-        const selectExtract = this.range.extractContents();
-
-        if (fragment.querySelector(`[data-role="ctx-start"]`)) {
-            this.ctxSelect.before(this.ctxStart);
-        }
-        else if (fragment.querySelector(`[data-role="ctx-end"]`)) {
-            this.ctxSelect.after(this.ctxEnd);
-        }
-
-        this.ctxSelect.after(selectExtract);
-
-        this.ctxSelect.remove();
-    }
-
-    /**
-    * exterminates particular node types from 
-    * the selection
-    *
-    * @param {HTMLElement} node
-    * the node to exterminate other nodes
-    * from within
-    *
-    * @param {string} type
-    * the type of node to remove from the
-    * first param's child list
-    *
-    * @return {void}
-    */
-    exterminate (node, type) {
-        node.innerHTML = node.innerHTML.replace(/<\w+><\/\w+>/g, "");
-        node.innerHTML = node.innerHTML.replace(this.#nodeReg(type), "");
-    }
-
-    /**
-    * highlights the boundaries between
-    * the ctxStart and ctxEnd
-    *
-    * @return {void}
-    */
-    highlight () {
-        this.range.setStartAfter(this.ctxStart);
-        this.range.setEndBefore(this.ctxEnd);
-    }
-
-    /**
-    * removes the start and end boundaries
-    *
-    * @return {void}
-    */
-    deselect () {
-        this.ctxStart.remove();
-        this.ctxEnd.remove();
-    }
-
-    getSelectionSiblings () {
-        if (!this.cxtStart && !this.ctxEnd) throw new Error("CTX boundaries have not been set");
-
-        const prevNode = this.ctxStart.previousSibling;
-        const prevFormat = prevNode && !prevNode.nodeName.match(/#text/) ? prevNode.nodeName.toLowerCase() : null;
-        const nextNode = this.ctxEnd.nextSibling;
-        const nextFormat = nextNode && !nextNode.nodeName.match(/#text/) ? nextNode.nodeName.toLowerCase() : null;
-
-        return { 
-            prev : { 
-                prevNode,
-                prevFormat
-            },
-            next : {
-                nextNode,
-                nextFormat
-            }
-        };
-    }
-
-    moveSelectionTo (node, mode) {
-        if (mode.match(/append|add|suffix|after/i)) {
-            node.appendChild(this.ctxSelect);
-        }
-        else if (mode.match(/prepend|before|prefix|shift/)) {
-            node.childNodes[0].before(this.ctxSelect);
-        }
-
-        this.setBoundaries();
-    }
-
-    moveNodeContentsTo (node, target, mode) {
-        this.range.selectNodeContents(node);
-
-        const extract = this.range.extractContents();
-
-        if (mode.match(/append|add|suffix|after/i)) {
-            target.appendChild(extract);
-        }
-        else if (mode.match(/prepend|before|prefix|shift/)) {
-            target.childNodes[0].before(extract);
-        }
-
-        node.remove();
     }
 }
