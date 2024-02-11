@@ -74,6 +74,7 @@ export default class ContextOptimize {
         if (nextFormat !== tag && prevFormat !== tag) return false;
 
         this.select.set();
+        this.optimize.remove(this.ctxSelect, this.format);
 
         if (prevFormat === tag && nextFormat !== tag) {
             this.select.moveTo(prevNode, "append");
@@ -93,17 +94,14 @@ export default class ContextOptimize {
         }
     }
 
+    /**
+*/
     insertBias () {
-        const { caretPrev, caretNext, caretNextFormat, caretPrevFormat } = this.details;
+        const { caretNext, caretNextFormat } = this.details;
 
         if (caretNextFormat === this.format) {
-            this.range.selectNodeContents(caretNext);
-            this.ctxCaret.remove();
-
-            const extract = this.range.extractContents();
-
-            caretNext.innerHTML = "&#xFEFF;";
-            caretNext.appendChild(extract);
+            //this.range.setStart(caretNext, 0);
+            this.caret.focus(caretNext, "innerBefore");
 
             this.editor.body.focus();
             

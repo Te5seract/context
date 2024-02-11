@@ -189,10 +189,22 @@ export default class ContextSelect {
     siblings () {
         if (!this.cxtStart && !this.ctxEnd) throw new Error("CTX boundaries have not been set");
 
-        const prevNode = this.ctxStart.previousSibling;
-        const prevFormat = prevNode && !prevNode.nodeName.match(/#text/) ? prevNode.nodeName.toLowerCase() : null;
-        const nextNode = this.ctxEnd.nextSibling;
-        const nextFormat = nextNode && !nextNode.nodeName.match(/#text/) ? nextNode.nodeName.toLowerCase() : null;
+        let prevNode = this.ctxStart.previousSibling;
+        let prevFormat = prevNode && !prevNode.nodeName.match(/#text/) ? prevNode.nodeName.toLowerCase() : null;
+        let nextNode = this.ctxEnd.nextSibling;
+        let nextFormat = nextNode && !nextNode.nodeName.match(/#text/) ? nextNode.nodeName.toLowerCase() : null;
+
+        if (!nextFormat) { 
+            const nextFormatNode = this.DOM.nodeRoot(this.ctxEnd, this.format); 
+            nextFormat = nextFormatNode.nodeName.toLowerCase() === this.format ? nextFormatNode.nodeName.toLowerCase() : null;
+            nextNode = nextFormat ?  nextFormatNode : nextNode;
+        }
+
+        if (!prevFormat) { 
+            const prevFormatNode = this.DOM.nodeRoot(this.ctxStart, this.format); 
+            prevFormat = prevFormatNode.nodeName.toLowerCase() === this.format ? prevFormatNode.nodeName.toLowerCase() : null;
+            prevNode = prevFormat ? prevFormatNode : prevNode;
+        }
 
         return { 
             prev : { 

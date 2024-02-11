@@ -156,9 +156,13 @@ export default class ContextFormatActions {
     insert () {
         const { caretPrev, caretNext, caretNextFormat, caretPrevFormat } = this.details;
         const format = this.operation.createNode(this.format);
-        //const bias = this.optimize.insertBias();
+        const bias = this.optimize.insertBias();
 
-        //if (bias) return;
+        if (bias) { 
+            this.caret.clear();
+
+            return; 
+        }
 
         this.range.insertNode(format);
         this.range.collapse();
@@ -178,8 +182,16 @@ export default class ContextFormatActions {
 
 		this.caret.set();
 
-        if (!caretNextFormat) {
+        if (!caretNextFormat && caretPrevFormat) {
+            console.log(1);
 			this.caret.exitRight();
         }
+        else if (caretNextFormat && caretPrevFormat) {
+            console.log(2);
+            this.caret.exit();
+        }
+        //else if (!caretPrevFormat && caretNextFormat) {
+            //this.caret.exitLeft();
+        //}
     }
 }
